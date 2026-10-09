@@ -3,7 +3,7 @@
  * - Sirve mini-apps desde IndexedDB bajo /apps/<id>/*
  * - Inyecta el bridge de aislamiento ANTES de que corra el JS de la app
  */
-const SYSTEM_CACHE = 'zbitdroid-system-v5.7';
+const SYSTEM_CACHE = 'zbitdroid-system-v5.7.1';
 const APP_PREFIX = '/apps/';
 const BRIDGE_FILE = '__zbit_bridge.js';
 
