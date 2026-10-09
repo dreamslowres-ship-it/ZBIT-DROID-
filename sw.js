@@ -3,7 +3,7 @@
  * - Sirve mini-apps desde IndexedDB bajo /apps/<id>/*
  * - Inyecta el bridge de aislamiento ANTES de que corra el JS de la app
  */
-const SYSTEM_CACHE = 'zbitdroid-system-v5.7.2';
+const SYSTEM_CACHE = 'zbitdroid-system-v5.7.3';
 // Prefijo derivado del scope del SW (funciona en raíz y en subdirectorios de GitHub Pages)
 const SCOPE_PATH = new URL(self.registration.scope).pathname; // ej: / o /repo/
 const APP_PREFIX = SCOPE_PATH + 'apps/';
@@ -275,11 +275,22 @@ function idbGet(store, key) {
   });
 }
 
+let _swDb = null;
+let _swDbPromise = null;
 function openDB() {
-  return new Promise((resolve, reject) => {
+  if (_swDb) return Promise.resolve(_swDb);
+  if (_swDbPromise) return _swDbPromise;
+  _swDbPromise = new Promise((resolve, reject) => {
     const request = indexedDB.open('ZBITDROID_VFS', 2);
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => { _swDbPromise = null; reject(request.error); };
+    request.onsuccess = () => {
+      const db = request.result;
+      db.onclose = () => { _swDb = null; _swDbPromise = null; };
+      db.onversionchange = () => { try { db.close(); } catch (e) {} _swDb = null; _swDbPromise = null; };
+      _swDb = db;
+      _swDbPromise = null;
+      resolve(db);
+    };
     request.onupgradeneeded = (e) => {
       const db = e.target.result;
       if (!db.objectStoreNames.contains('files')) {
@@ -291,6 +302,7 @@ function openDB() {
       if (!db.objectStoreNames.contains('shared')) db.createObjectStore('shared', { keyPath: 'path' });
     };
   });
+  return _swDbPromise;
 }
 
 function guessMime(path) {
