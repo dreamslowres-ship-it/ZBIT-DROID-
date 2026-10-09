@@ -755,7 +755,12 @@
   const DB_NAME = 'ZBITDROID_VFS';
   const DB_VERSION = 2;
   const STORES = { FILES:'files', APPS:'apps', PERMISSIONS:'permissions' };
-  const APP_PREFIX = '/apps/';
+  // Base path para funcionar tanto en raíz como en subdirectorios (GitHub Pages)
+  const BASE_PATH = (() => {
+    const path = location.pathname;
+    return path.endsWith('/') ? path : path.replace(/\/[^/]*$/, '/');
+  })();
+  const APP_PREFIX = BASE_PATH + 'apps/';
   const MIME_MAP = { html:'text/html', htm:'text/html', css:'text/css', js:'application/javascript', mjs:'application/javascript', json:'application/json', png:'image/png', jpg:'image/jpeg', jpeg:'image/jpeg', gif:'image/gif', webp:'image/webp', svg:'image/svg+xml', ico:'image/x-icon', woff:'font/woff', woff2:'font/woff2', ttf:'font/ttf', mp3:'audio/mpeg', wav:'audio/wav', mp4:'video/mp4', webm:'video/webm', txt:'text/plain', md:'text/markdown', xml:'application/xml', pdf:'application/pdf' };
   const SYSTEM_PERMISSIONS = [
     { id:'camera', name:'Cámara', desc:'Acceso a la cámara' },
