@@ -309,4 +309,10 @@ function guessMime(path) {
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
   if (event.data?.type === 'CLIENTS_CLAIM') self.clients.claim();
+  
+  // ⬇️ AGREGA ESTO AL FINAL DE TU sw.js ⬇️
+self.addEventListener('fetch', (event) => {
+  // Handler mínimo requerido por Chrome Android para permitir la instalación.
+  // No intercepta nada realmente, solo cumple el requisito de instalabilidad.
+  return;
 });
