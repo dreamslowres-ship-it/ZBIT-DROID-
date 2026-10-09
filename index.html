@@ -989,13 +989,89 @@
 
   /* ───── 6. IndexedDB VFS ───── */
   let dbInstance = null;
-  function openDB(){ if(dbInstance) return Promise.resolve(dbInstance); return new Promise((resolve,reject)=>{ const req = indexedDB.open(DB_NAME, DB_VERSION); req.onerror = ()=>reject(req.error); req.onsuccess = ()=>{ dbInstance = req.result; resolve(dbInstance); }; req.onupgradeneeded = (e)=>{ const db = e.target.result; if(!db.objectStoreNames.contains(STORES.FILES)){ const files = db.createObjectStore(STORES.FILES,{keyPath:'key'}); files.createIndex('appId','appId',{unique:false}); } if(!db.objectStoreNames.contains(STORES.APPS)) db.createObjectStore(STORES.APPS,{keyPath:'id'}); if(!db.objectStoreNames.contains(STORES.PERMISSIONS)) db.createObjectStore(STORES.PERMISSIONS,{keyPath:'appId'}); if(!db.objectStoreNames.contains('shared')) db.createObjectStore('shared',{keyPath:'path'}); }; }); }
-  async function putFile(appId,path,blob,mime){ const db = await openDB(); return new Promise((resolve,reject)=>{ const tx = db.transaction(STORES.FILES,'readwrite'); const record = { key:`${appId}:${path}`, appId, path, blob, mime, size:blob.size, updatedAt:Date.now() }; const req = tx.objectStore(STORES.FILES).put(record); req.onsuccess = ()=>resolve(record); req.onerror = ()=>reject(req.error); }); }
-  async function getFile(appId,path){ const db = await openDB(); return new Promise((resolve,reject)=>{ const tx = db.transaction(STORES.FILES,'readonly'); const req = tx.objectStore(STORES.FILES).get(`${appId}:${path}`); req.onsuccess = ()=>resolve(req.result||null); req.onerror = ()=>reject(req.error); }); }
+  let dbOpenPromise = null;
+  function openDB(){
+    if(dbInstance) return Promise.resolve(dbInstance);
+    if(dbOpenPromise) return dbOpenPromise;
+    dbOpenPromise = new Promise((resolve,reject)=>{
+      const req = indexedDB.open(DB_NAME, DB_VERSION);
+      req.onerror = ()=>{ dbOpenPromise = null; reject(req.error); };
+      req.onsuccess = ()=>{
+        const db = req.result;
+        db.onclose = ()=>{ dbInstance = null; dbOpenPromise = null; };
+        db.onversionchange = ()=>{ try{ db.close(); }catch(e){} dbInstance = null; dbOpenPromise = null; };
+        dbInstance = db;
+        dbOpenPromise = null;
+        resolve(db);
+      };
+      req.onupgradeneeded = (e)=>{
+        const db = e.target.result;
+        if(!db.objectStoreNames.contains(STORES.FILES)){
+          const files = db.createObjectStore(STORES.FILES,{keyPath:'key'});
+          files.createIndex('appId','appId',{unique:false});
+        }
+        if(!db.objectStoreNames.contains(STORES.APPS)) db.createObjectStore(STORES.APPS,{keyPath:'id'});
+        if(!db.objectStoreNames.contains(STORES.PERMISSIONS)) db.createObjectStore(STORES.PERMISSIONS,{keyPath:'appId'});
+        if(!db.objectStoreNames.contains('shared')) db.createObjectStore('shared',{keyPath:'path'});
+      };
+    });
+    return dbOpenPromise;
+  }
+  function isDbClosingError(err){
+    return err && (/connection is closing|database connection is closing|InvalidStateError/i.test(err.message||'') || err.name === 'InvalidStateError');
+  }
+  async function withDB(fn, retries=2){
+    for(let i=0; i<=retries; i++){
+      try {
+        const db = await openDB();
+        return await fn(db);
+      } catch(err){
+        if(isDbClosingError(err) && i < retries){
+          dbInstance = null;
+          dbOpenPromise = null;
+          await new Promise(r=>setTimeout(r, 50 * (i+1)));
+          continue;
+        }
+        throw err;
+      }
+    }
+  }
+  async function putFile(appId,path,blob,mime){
+    return withDB(db => new Promise((resolve,reject)=>{
+      try {
+        const tx = db.transaction(STORES.FILES,'readwrite');
+        const record = { key:`${appId}:${path}`, appId, path, blob, mime, size:blob.size, updatedAt:Date.now() };
+        const req = tx.objectStore(STORES.FILES).put(record);
+        req.onsuccess = ()=>resolve(record);
+        req.onerror = ()=>reject(req.error);
+        tx.onabort = ()=>reject(tx.error || new Error('Transaction aborted'));
+      } catch(e){ reject(e); }
+    }));
+  }
+  async function getFile(appId,path){
+    return withDB(db => new Promise((resolve,reject)=>{
+      try {
+        const tx = db.transaction(STORES.FILES,'readonly');
+        const req = tx.objectStore(STORES.FILES).get(`${appId}:${path}`);
+        req.onsuccess = ()=>resolve(req.result||null);
+        req.onerror = ()=>reject(req.error);
+      } catch(e){ reject(e); }
+    }));
+  }
   async function listAppFiles(appId){ const db = await openDB(); return new Promise((resolve,reject)=>{ const tx = db.transaction(STORES.FILES,'readonly'); const idx = tx.objectStore(STORES.FILES).index('appId'); const req = idx.getAll(IDBKeyRange.only(appId)); req.onsuccess = ()=>{ const rows = (req.result||[]).map(r=>({path:r.path,size:r.size,mime:r.mime,updatedAt:r.updatedAt})); rows.sort((a,b)=>a.path.localeCompare(b.path)); resolve(rows); }; req.onerror = ()=>reject(req.error); }); }
   async function deleteFile(appId,path){ const db = await openDB(); return new Promise((resolve,reject)=>{ const tx = db.transaction(STORES.FILES,'readwrite'); const req = tx.objectStore(STORES.FILES).delete(`${appId}:${path}`); req.onsuccess = ()=>resolve(); req.onerror = ()=>reject(req.error); }); }
   async function deleteAppFiles(appId){ const db = await openDB(); return new Promise((resolve,reject)=>{ const tx = db.transaction(STORES.FILES,'readwrite'); const idx = tx.objectStore(STORES.FILES).index('appId'); const req = idx.openCursor(IDBKeyRange.only(appId)); req.onsuccess = (e)=>{ const c=e.target.result; if(c){ c.delete(); c.continue(); } }; tx.oncomplete = ()=>resolve(); tx.onerror = ()=>reject(tx.error); }); }
-  async function putApp(meta){ const db = await openDB(); return new Promise((resolve,reject)=>{ const tx = db.transaction(STORES.APPS,'readwrite'); const req = tx.objectStore(STORES.APPS).put(meta); req.onsuccess = ()=>resolve(meta); req.onerror = ()=>reject(req.error); }); }
+  async function putApp(meta){
+    return withDB(db => new Promise((resolve,reject)=>{
+      try {
+        const tx = db.transaction(STORES.APPS,'readwrite');
+        const req = tx.objectStore(STORES.APPS).put(meta);
+        req.onsuccess = ()=>resolve(meta);
+        req.onerror = ()=>reject(req.error);
+        tx.onabort = ()=>reject(tx.error || new Error('Transaction aborted'));
+      } catch(e){ reject(e); }
+    }));
+  }
   async function getApp(id){ const db = await openDB(); return new Promise((resolve,reject)=>{ const tx = db.transaction(STORES.APPS,'readonly'); const req = tx.objectStore(STORES.APPS).get(id); req.onsuccess = ()=>resolve(req.result||null); req.onerror = ()=>reject(req.error); }); }
   async function getAllApps(){ const db = await openDB(); return new Promise((resolve,reject)=>{ const tx = db.transaction(STORES.APPS,'readonly'); const req = tx.objectStore(STORES.APPS).getAll(); req.onsuccess = ()=>resolve(req.result||[]); req.onerror = ()=>reject(req.error); }); }
   async function deleteAppMeta(id){ const db = await openDB(); return new Promise((resolve,reject)=>{ const tx = db.transaction(STORES.APPS,'readwrite'); const req = tx.objectStore(STORES.APPS).delete(id); req.onsuccess = ()=>resolve(); req.onerror = ()=>reject(req.error); }); }
@@ -1057,8 +1133,25 @@
     const quota = await checkQuota(meta.size);
     if(!quota.canInstall) throw new Error(quota.message||'Sin espacio');
     try {
-      for(const file of files) await putFile(meta.id, file.path, file.blob, file.mime);
-      if(options.customIconBlob){ await putFile(meta.id, '__custom_icon__', options.customIconBlob, options.customIconMime||'image/png'); meta.customIconPath = '__custom_icon__'; }
+      // Batch all file writes in a single transaction (más fiable y evita "connection is closing")
+      await withDB(db => new Promise((resolve, reject) => {
+        try {
+          const tx = db.transaction(STORES.FILES, 'readwrite');
+          const store = tx.objectStore(STORES.FILES);
+          const allFiles = [...files];
+          if (options.customIconBlob) {
+            allFiles.push({ path: '__custom_icon__', blob: options.customIconBlob, mime: options.customIconMime || 'image/png' });
+            meta.customIconPath = '__custom_icon__';
+          }
+          for (const file of allFiles) {
+            const record = { key: `${meta.id}:${file.path}`, appId: meta.id, path: file.path, blob: file.blob, mime: file.mime, size: file.blob.size, updatedAt: Date.now() };
+            store.put(record);
+          }
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+          tx.onabort = () => reject(tx.error || new Error('Transaction aborted'));
+        } catch (e) { reject(e); }
+      }));
       await putApp(meta);
     } catch(err){
       if(err?.name === 'QuotaExceededError' || /quota/i.test(err?.message||'')) throw new Error('Sin espacio de almacenamiento. Liberá datos desde el panel → Almacenamiento.');
