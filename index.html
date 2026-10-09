@@ -745,7 +745,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="/lib/jszip.min.js"></script>
+  <script src="./lib/jszip.min.js"></script>
   <script type="module">
   /* ═════════════════════════════════════════════════════════════════
      ZBITDROID v5.6
@@ -2434,7 +2434,7 @@
   async function registerSW(){
     if(!('serviceWorker' in navigator)) return;
     try {
-      const reg = await navigator.serviceWorker.register('/sw.js', { scope:'/' });
+      const reg = await navigator.serviceWorker.register('./sw.js', { scope:'./' });
       if(reg.installing){ await new Promise(resolve=>{ reg.installing.addEventListener('statechange', e=>{ if(e.target.state==='activated') resolve(); }); }); }
       else if(reg.waiting){ reg.waiting.postMessage({ type:'SKIP_WAITING' }); }
       if(reg.active) reg.active.postMessage({ type:'CLIENTS_CLAIM' });
