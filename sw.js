@@ -3,8 +3,10 @@
  * - Sirve mini-apps desde IndexedDB bajo /apps/<id>/*
  * - Inyecta el bridge de aislamiento ANTES de que corra el JS de la app
  */
-const SYSTEM_CACHE = 'zbitdroid-system-v5.7.1';
-const APP_PREFIX = '/apps/';
+const SYSTEM_CACHE = 'zbitdroid-system-v5.7.2';
+// Prefijo derivado del scope del SW (funciona en raíz y en subdirectorios de GitHub Pages)
+const SCOPE_PATH = new URL(self.registration.scope).pathname; // ej: / o /repo/
+const APP_PREFIX = SCOPE_PATH + 'apps/';
 const BRIDGE_FILE = '__zbit_bridge.js';
 
 const SYSTEM_ASSETS = [
@@ -55,7 +57,7 @@ self.addEventListener('fetch', (event) => {
           }
           return res;
         })
-        .catch(() => caches.match('/index.html'));
+        .catch(() => caches.match('./index.html') || caches.match(SCOPE_PATH + 'index.html'));
     })
   );
 });
