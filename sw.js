@@ -8,10 +8,10 @@ const APP_PREFIX = '/apps/';
 const BRIDGE_FILE = '__zbit_bridge.js';
 
 const SYSTEM_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/lib/jszip.min.js'
+  './',
+  './index.html',
+  './manifest.json',
+  './lib/jszip.min.js'
 ];
 
 self.addEventListener('install', (event) => {
