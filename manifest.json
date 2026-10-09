@@ -1,0 +1,27 @@
+{
+  "name": "ZBITDROID",
+  "short_name": "ZBITDROID",
+  "description": "Sistema operativo de mini-apps web. Instala y ejecuta aplicaciones HTML/CSS/JS de forma segura y offline.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0c0c0e",
+  "theme_color": "#0c0c0e",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["utilities", "productivity"],
+  "prefer_related_applications": false
+}

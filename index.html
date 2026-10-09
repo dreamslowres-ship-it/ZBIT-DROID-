@@ -1,0 +1,2474 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0c0c0e" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="description" content="ZBITDROID - Sistema de mini-apps web" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192.png" />
+  <title>ZBITDROID</title>
+  <style>
+    :root {
+      --bg: #0c0c0e; --bg-elevated: #141417; --bg-card: #1a1a1f; --bg-hover: #24242b;
+      --border: #2e2e36; --border-subtle: #222228;
+      --red: #e63946; --red-dim: #b82d38; --red-glow: rgba(230,57,70,0.35);
+      --accent-soft: rgba(230,57,70,0.10); --accent-muted: rgba(230,57,70,0.14); --accent-faint: rgba(230,57,70,0.07);
+      --text: #f0f0f2; --text-secondary: #9a9aa3; --text-muted: #5c5c66;
+      --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+      --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+      --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      height: 100%; overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      background: var(--bg); color: var(--text); user-select: none;
+      overscroll-behavior-y: contain;
+      -webkit-touch-callout: none;
+    }
+    ::selection { background: var(--red); color: #fff; }
+    :focus { outline: none; }
+    :focus-visible { outline: 2px solid var(--red); outline-offset: 2px; border-radius: 6px; }
+    input, button, textarea { font-family: inherit; }
+    input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus {
+      -webkit-text-fill-color: var(--text);
+      -webkit-box-shadow: 0 0 0 1000px var(--bg-card) inset;
+      transition: background-color 5000s;
+    }
+    #app { height: 100%; display: flex; flex-direction: column; position: relative; }
+
+    * { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--border-subtle); background-clip: content-box; }
+
+    /* Range custom */
+    input[type="range"] { -webkit-appearance: none; appearance: none; background: transparent; height: 24px; cursor: pointer; }
+    input[type="range"]::-webkit-slider-runnable-track { width: 100%; height: 4px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 2px; }
+    input[type="range"]::-moz-range-track { width: 100%; height: 4px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 2px; }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; background: var(--red); border: 2px solid var(--bg-elevated); border-radius: 50%; margin-top: -8px; box-shadow: 0 2px 6px rgba(0,0,0,0.4); transition: transform 0.12s var(--ease-spring); }
+    input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; background: var(--red); border: 2px solid var(--bg-elevated); border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.4); }
+    input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.15); }
+
+    #launcher {
+      flex: 1; overflow-y: auto; overflow-x: hidden;
+      padding: calc(var(--safe-top) + 14px) 16px calc(120px + var(--safe-bottom) + 16px);
+      scroll-behavior: smooth;
+      background: radial-gradient(ellipse 80% 40% at 50% -10%, var(--accent-soft), transparent), var(--bg);
+      position: relative;
+    }
+    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; padding: 4px 0; min-height: 40px; }
+    .header-left { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+    .header-title { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 800; letter-spacing: -0.6px; min-width: 0; }
+    .header-title .title-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; animation: titleIn 0.3s var(--ease-spring) both; }
+    @keyframes titleIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    .logo-mark { width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0; background: linear-gradient(135deg, var(--red), var(--red-dim)); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px var(--red-glow); }
+    .logo-mark svg { width: 18px; height: 18px; }
+    .header-title span.accent { color: var(--red); }
+
+    .breadcrumb { display: none; align-items: center; flex-wrap: wrap; gap: 2px; font-size: 11.5px; color: var(--text-muted); margin-bottom: 10px; padding: 0 2px; min-height: 16px; animation: fadeIn 0.2s var(--ease-out-expo); }
+    .breadcrumb.visible { display: flex; }
+    .breadcrumb button { border: none; background: none; padding: 2px 4px; color: var(--text-muted); font-size: 11.5px; font-weight: 500; cursor: pointer; border-radius: 4px; transition: color 0.15s, background 0.15s; }
+    .breadcrumb button:hover, .breadcrumb button:active { color: var(--text); background: var(--bg-hover); }
+    .breadcrumb .sep { color: var(--text-muted); opacity: 0.5; padding: 0 1px; }
+    .breadcrumb .current { color: var(--text-secondary); font-weight: 600; padding: 2px 4px; }
+
+    .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text-muted); margin-bottom: 14px; }
+    .apps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 20px 10px; margin-bottom: 28px; transition: opacity 0.22s var(--ease-smooth), transform 0.22s var(--ease-smooth); transform-origin: center 30%; }
+    .apps-grid.view-leaving { opacity: 0; transform: scale(0.92); }
+    .apps-grid.view-entering { transition: none; opacity: 0; transform: scale(1.06); }
+
+    .app-icon { display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; transition: transform 0.18s var(--ease-spring); animation: iconIn 0.42s var(--ease-out-expo) both; position: relative; touch-action: manipulation; }
+    .app-icon:active { transform: scale(0.9); }
+    @keyframes iconIn { from { opacity: 0; transform: scale(0.7) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+    .app-icon .icon-box { width: 66px; height: 66px; border-radius: 18px; background: var(--bg-card); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; box-shadow: 0 4px 16px rgba(0,0,0,0.35); transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s var(--ease-spring); }
+    .app-icon:active .icon-box { border-color: var(--red); box-shadow: 0 0 0 2px var(--red-glow), 0 4px 16px rgba(0,0,0,0.4); }
+    .app-icon .icon-box img { width: 100%; height: 100%; object-fit: cover; }
+    .app-icon .icon-box .default-icon { width: 28px; height: 28px; opacity: 0.7; }
+    .app-icon .icon-box .default-icon svg { width: 100%; height: 100%; stroke: var(--text-secondary); fill: none; stroke-width: 1.6; }
+    .app-icon .name { font-size: 11.5px; font-weight: 500; text-align: center; max-width: 78px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary); transition: color 0.15s; }
+
+    @keyframes shakeIcon { 0%,100% { transform: rotate(-1deg); } 50% { transform: rotate(1deg); } }
+    body.edit-mode .app-icon { animation: shakeIcon 0.5s ease-in-out infinite; }
+    body.edit-mode .app-icon:nth-child(3n) { animation-delay: -0.1s; }
+    body.edit-mode .app-icon:nth-child(3n+1) { animation-delay: -0.2s; }
+    body.edit-mode .app-icon:nth-child(3n+2) { animation-delay: -0.3s; }
+    body.edit-mode .app-icon.selected { animation: none; }
+    body.edit-mode .app-icon.selected .icon-box { border-color: var(--red); box-shadow: 0 0 0 3px var(--red-glow), 0 4px 16px rgba(0,0,0,0.4); transform: scale(1.06); }
+    body.edit-mode .app-icon.selected .name { color: var(--red); font-weight: 600; }
+    .app-icon .select-mark { position: absolute; top: -4px; right: -4px; width: 22px; height: 22px; border-radius: 50%; background: var(--red); color: #fff; display: none; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.35), 0 0 0 2px var(--bg); z-index: 3; animation: popIn 0.2s var(--ease-spring); }
+    @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+    .app-icon.selected .select-mark { display: flex; }
+    .app-icon .select-mark svg { width: 12px; height: 12px; stroke: #fff; fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+
+    .folder-box { position: relative; }
+    .folder-badge { position: absolute; right: 6px; bottom: 6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--red); color: #fff; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+
+    .empty-state { text-align: center; padding: 56px 24px; color: var(--text-muted); animation: fadeIn 0.5s var(--ease-out-expo); }
+    .empty-state .empty-icon { width: 56px; height: 56px; margin: 0 auto 16px; opacity: 0.4; }
+    .empty-state .empty-icon svg { width: 100%; height: 100%; stroke: var(--text-muted); fill: none; stroke-width: 1.4; }
+    .empty-state h3 { font-size: 16px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 600; }
+    .empty-state p { font-size: 13px; line-height: 1.45; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    .edit-bar { position: fixed; bottom: calc(16px + var(--safe-bottom)); left: 16px; right: 16px; max-width: 440px; margin: 0 auto; background: rgba(20, 20, 23, 0.82); backdrop-filter: blur(20px) saturate(1.6); -webkit-backdrop-filter: blur(20px) saturate(1.6); border: 1px solid var(--border); border-radius: 22px; padding: 10px; display: none; align-items: center; gap: 8px; z-index: 100; box-shadow: 0 16px 40px rgba(0,0,0,0.55); transform: translateY(120px); opacity: 0; transition: transform 0.42s var(--ease-ios), opacity 0.3s; }
+    body.edit-mode .edit-bar { display: flex; transform: translateY(0); opacity: 1; }
+    .edit-bar .eb-info { flex: 1; min-width: 0; padding-left: 8px; font-size: 13px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.25; }
+    .edit-bar .eb-info small { font-size: 11px; color: var(--text-muted); font-weight: 500; display: block; margin-top: 2px; }
+    .edit-bar .eb-btn { width: 42px; height: 42px; border-radius: 13px; border: none; background: var(--bg-card); color: var(--text-secondary); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: transform 0.12s var(--ease-spring), background 0.15s, color 0.15s, opacity 0.15s; }
+    .edit-bar .eb-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+    .edit-bar .eb-btn:active { transform: scale(0.9); background: var(--bg-hover); }
+    .edit-bar .eb-btn:disabled { opacity: 0.3; pointer-events: none; }
+    .edit-bar .eb-btn.done { background: var(--red); color: #fff; }
+    .edit-bar .eb-btn.done:active { filter: brightness(0.92); }
+    .edit-bar .eb-btn.danger { color: var(--red); }
+    body.edit-mode .panel-btn { display: none; }
+    body:not(.edit-mode) .panel-btn { display: flex; }
+
+    .panel-btn { position: fixed; bottom: calc(20px + var(--safe-bottom)); right: 20px; width: 60px; height: 60px; border-radius: 20px; border: none; background: linear-gradient(145deg, var(--red), var(--red-dim)); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 90; box-shadow: 0 8px 28px var(--red-glow); transition: transform 0.25s var(--ease-spring), box-shadow 0.2s; }
+    .panel-btn svg { width: 26px; height: 26px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .panel-btn:active { transform: scale(0.92); }
+
+    .panel-backdrop { position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0); pointer-events: none; transition: background 0.3s var(--ease-smooth); }
+    .panel-backdrop.active { background: rgba(0,0,0,0.55); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); pointer-events: auto; }
+    .panel { position: fixed; left: 0; right: 0; bottom: 0; z-index: 510; background: var(--bg-elevated); border-radius: 24px 24px 0 0; border: 1px solid var(--border); border-bottom: none; max-width: 480px; margin: 0 auto; padding: 8px 0 calc(20px + var(--safe-bottom)); transform: translateY(105%); transition: transform 0.4s var(--ease-ios); max-height: 88vh; overflow-y: auto; overscroll-behavior: contain; }
+    .panel.active { transform: translateY(0); }
+    .panel-handle { width: 40px; height: 4px; border-radius: 2px; background: var(--border); margin: 6px auto 12px; }
+    .panel-hero { padding: 0 22px 18px; display: flex; align-items: center; justify-content: space-between; }
+    .panel-hero-title { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+    .panel-hero-title span { color: var(--red); }
+    .panel-hero-close { width: 36px; height: 36px; border-radius: 50%; border: none; background: var(--bg-card); color: var(--text-secondary); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.15s var(--ease-spring), background 0.15s; }
+    .panel-hero-close:active { transform: scale(0.9); background: var(--bg-hover); }
+    .panel-hero-close svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
+    .panel-section { padding: 6px 14px 0; margin-bottom: 6px; }
+    .panel-section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text-muted); padding: 12px 8px 8px; }
+    .panel-item { display: flex; align-items: center; gap: 14px; padding: 14px 10px; border-radius: 14px; cursor: pointer; transition: background 0.15s, transform 0.12s var(--ease-spring); }
+    .panel-item:active { background: var(--bg-hover); transform: scale(0.99); }
+    .panel-item .pi-icon { width: 40px; height: 40px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .panel-item .pi-icon svg { width: 20px; height: 20px; stroke: var(--text-secondary); fill: none; stroke-width: 1.7; }
+    .panel-item.primary .pi-icon { background: var(--accent-faint); border-color: var(--red-dim); }
+    .panel-item.primary .pi-icon svg { stroke: var(--red); }
+    .panel-item .pi-meta { flex: 1; min-width: 0; }
+    .panel-item .pi-name { font-size: 15px; font-weight: 600; }
+    .panel-item .pi-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .panel-item .pi-chevron { width: 16px; height: 16px; stroke: var(--text-muted); fill: none; stroke-width: 2; flex-shrink: 0; }
+    .panel-divider { height: 1px; background: var(--border-subtle); margin: 6px 22px; }
+
+    #runtime { position: fixed; inset: 0; z-index: 200; background: #000; display: none; flex-direction: column; opacity: 0; transition: opacity 0.25s ease-out; }
+    #runtime.active { display: flex; opacity: 1; }
+    #runtime.immersive .runtime-bar { display: none; }
+    .immersive-handle { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 44px; height: 22px; z-index: 210; display: none; align-items: flex-start; justify-content: center; padding-top: 6px; cursor: pointer; touch-action: none; }
+    .immersive-handle.visible { display: flex; }
+    .immersive-handle .pill { width: 36px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.35); transition: background 0.15s, width 0.15s; }
+    .immersive-handle:active .pill { background: rgba(255,255,255,0.65); width: 42px; }
+    .runtime-bar { height: calc(44px + var(--safe-top)); padding-top: var(--safe-top); padding-left: 10px; padding-right: 10px; background: #111114; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border-subtle); flex-shrink: 0; }
+    .runtime-bar .app-title { flex: 1; font-size: 13px; font-weight: 600; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+    .runtime-bar .rb-btn { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-secondary); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: background 0.12s, transform 0.12s var(--ease-spring); }
+    .runtime-bar .rb-btn:active { background: var(--bg-hover); transform: scale(0.92); }
+    .runtime-bar .rb-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+    .runtime-bar .rb-btn.active-fs { border-color: var(--red); color: var(--red); background: var(--accent-muted); }
+    #app-frame { flex: 1; width: 100%; border: none; background: #fff; overscroll-behavior: none; }
+
+    body[data-icon-size="compact"] .app-icon .icon-box { width: 54px; height: 54px; border-radius: 14px; }
+    body[data-icon-size="compact"] .apps-grid { grid-template-columns: repeat(auto-fill, minmax(68px, 1fr)); gap: 14px 8px; }
+    body[data-icon-size="large"] .app-icon .icon-box { width: 76px; height: 76px; border-radius: 20px; }
+    body[data-icon-size="large"] .apps-grid { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 22px 12px; }
+    body[data-show-names="0"] .app-icon .name { display: none; }
+    #launcher.has-wallpaper { background-color: transparent; }
+    body[data-safe-margins="1"] #launcher { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+    body[data-safe-margins="1"] .panel-btn { right: max(20px, env(safe-area-inset-right)); bottom: max(20px, calc(16px + env(safe-area-inset-bottom))); }
+    body[data-safe-margins="0"] #launcher { padding-left: 8px; padding-right: 8px; }
+
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.72); z-index: 600; display: none; align-items: flex-end; justify-content: center; backdrop-filter: blur(0); -webkit-backdrop-filter: blur(0); transition: backdrop-filter 0.28s, background 0.28s; }
+    .modal-overlay.active { display: flex; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); background: rgba(0,0,0,0.55); }
+    .modal { background: var(--bg-elevated); border-radius: 22px 22px 0 0; width: 100%; max-width: 480px; max-height: 88vh; overflow-y: auto; padding: 22px 20px calc(22px + var(--safe-bottom)); border: 1px solid var(--border); border-bottom: none; transform: translateY(100%) scale(0.98); opacity: 0; transition: transform 0.34s var(--ease-ios), opacity 0.28s ease-out; will-change: transform, opacity; }
+    .modal-overlay.active .modal { transform: translateY(0) scale(1); opacity: 1; }
+    .modal::before { content: ''; display: block; width: 36px; height: 4px; border-radius: 2px; background: var(--border); margin: -8px auto 14px; }
+    .modal h2 { font-size: 18px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.3px; }
+    .modal .modal-sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 18px; line-height: 1.4; }
+
+    .dialog-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 700; display: none; align-items: center; justify-content: center; padding: 24px; backdrop-filter: blur(0); -webkit-backdrop-filter: blur(0); transition: backdrop-filter 0.22s; }
+    .dialog-overlay.active { display: flex; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+    .dialog { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 20px; padding: 22px 20px 16px; width: 100%; max-width: 380px; transform: scale(0.92); opacity: 0; transition: transform 0.26s var(--ease-spring), opacity 0.2s; box-shadow: 0 24px 60px rgba(0,0,0,0.6); }
+    .dialog-overlay.active .dialog { transform: scale(1); opacity: 1; }
+    .dialog h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.2px; }
+    .dialog p { font-size: 13.5px; color: var(--text-secondary); line-height: 1.45; margin-bottom: 18px; }
+    .dialog input { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text); font-size: 15px; margin-bottom: 18px; }
+    .dialog input:focus { outline: none; border-color: var(--red); box-shadow: 0 0 0 2px var(--red-glow); }
+    .dialog-actions { display: flex; gap: 8px; }
+    .dialog-actions .btn { flex: 1; padding: 11px 14px; font-size: 14px; }
+    .btn-danger-fill { background: linear-gradient(145deg, var(--red), var(--red-dim)); color: #fff; }
+
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 13px 20px; border-radius: 14px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; width: 100%; transition: transform 0.12s var(--ease-spring), filter 0.15s, background 0.15s; position: relative; overflow: hidden; }
+    .btn:active { transform: scale(0.97); filter: brightness(0.92); }
+    .btn-primary { background: linear-gradient(145deg, var(--red), var(--red-dim)); color: #fff; box-shadow: 0 4px 16px var(--red-glow); }
+    .btn-danger { background: transparent; color: var(--red); border: 1px solid var(--red-dim); }
+    .btn-secondary { background: var(--bg-card); color: var(--text); border: 1px solid var(--border); }
+    .btn-row { display: flex; gap: 10px; margin-top: 16px; }
+    .btn-row .btn { flex: 1; }
+
+    .select-btn { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text); font-size: 13px; cursor: pointer; text-align: left; transition: background 0.15s, border-color 0.15s; min-height: 42px; }
+    .select-btn span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .select-btn svg { width: 14px; height: 14px; stroke: var(--text-muted); fill: none; stroke-width: 2; flex-shrink: 0; margin-left: 8px; }
+    .select-btn:active { background: var(--bg-hover); }
+
+    .opts-sheet-backdrop { position: fixed; inset: 0; z-index: 900; background: rgba(0,0,0,0.55); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); animation: fadeIn 0.2s; }
+    .opts-sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 901; background: var(--bg-elevated); border-radius: 20px 20px 0 0; border: 1px solid var(--border); border-bottom: none; padding: 0 0 calc(16px + var(--safe-bottom)); max-width: 480px; margin: 0 auto; max-height: 70vh; overflow-y: auto; animation: sheetUp 0.28s var(--ease-ios); }
+    @keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .opts-sheet-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--border); margin: 8px auto 4px; }
+    .opts-sheet-title { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; padding: 14px 20px 8px; }
+    .opts-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; cursor: pointer; transition: background 0.12s; border-bottom: 1px solid var(--border-subtle); }
+    .opts-row:last-child { border-bottom: none; }
+    .opts-row:active { background: var(--bg-hover); }
+    .opts-row .opts-label { font-size: 15px; font-weight: 500; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; padding-right: 12px; }
+    .opts-row.selected .opts-label { color: var(--red); font-weight: 600; }
+    .opts-row .opts-check { width: 18px; height: 18px; flex-shrink: 0; color: var(--red); display: none; }
+    .opts-row.selected .opts-check { display: block; }
+    .opts-row .opts-check svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+
+    .file-drop { border: 1.5px dashed var(--border); border-radius: 16px; padding: 28px 16px; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s, transform 0.15s; background: var(--bg-card); }
+    .file-drop:hover, .file-drop.dragover { border-color: var(--red); background: var(--accent-faint); }
+    .file-drop.dragover { transform: scale(1.01); }
+    .file-drop input { display: none; }
+    .file-drop .drop-icon { width: 36px; height: 36px; margin: 0 auto 10px; opacity: 0.55; }
+    .file-drop .drop-icon svg { width: 100%; height: 100%; stroke: var(--text-secondary); fill: none; stroke-width: 1.5; }
+    .file-drop .drop-label { font-size: 14px; color: var(--text-secondary); }
+    .file-drop .drop-file { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
+    .wizard-field { margin-bottom: 12px; }
+    .wizard-field label { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .wizard-field input { width: 100%; padding: 11px 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text); font-size: 14px; }
+    .wizard-files { max-height: 120px; overflow-y: auto; font-size: 11px; color: var(--text-muted); background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 10px; margin-bottom: 12px; }
+
+    .perm-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border-subtle); }
+    .perm-item:last-child { border-bottom: none; }
+    .perm-item .info { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1; }
+    .perm-item .info .p-icon { width: 22px; height: 22px; flex-shrink: 0; opacity: 0.85; }
+    .perm-item .info .p-icon svg { width: 100%; height: 100%; stroke: var(--text-secondary); fill: none; stroke-width: 1.6; }
+    .perm-item .info .p-name { font-weight: 600; font-size: 14px; }
+    .perm-item .info .p-desc { font-size: 11px; color: var(--text-muted); }
+    .perm-item .pi-chevron { width: 14px; height: 14px; stroke: var(--text-muted); fill: none; stroke-width: 2; flex-shrink: 0; }
+    .perm-item.clickable { cursor: pointer; transition: background 0.15s; border-radius: 10px; }
+    .perm-item.clickable:active { background: var(--bg-hover); }
+
+    .toggle { width: 46px; height: 26px; border-radius: 13px; background: #2a2a32; position: relative; cursor: pointer; transition: background 0.22s; flex-shrink: 0; }
+    .toggle.on { background: var(--red); }
+    .toggle::after { content: ''; position: absolute; width: 20px; height: 20px; border-radius: 50%; background: #fff; top: 3px; left: 3px; transition: transform 0.24s var(--ease-spring); box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+    .toggle.on::after { transform: translateX(20px); }
+
+    .settings-section { margin-bottom: 22px; }
+    .settings-section h3 { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px; }
+    .settings-summary { padding: 12px 14px; border-radius: 14px; background: var(--bg-card); border: 1px solid var(--border); font-size: 13px; color: var(--text-secondary); display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+    .settings-summary .ss-value { color: var(--text); font-weight: 600; }
+    
+    .seg-control { display: flex; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .seg-control button { flex: 1; padding: 10px 8px; border: none; background: var(--bg-card); color: var(--text-secondary); font-size: 12px; font-weight: 600; cursor: pointer; transition: background 0.15s, color 0.15s; }
+    .seg-control button.active { background: var(--red); color: #fff; }
+    .seg-control button + button { border-left: 1px solid var(--border); }
+
+    .theme-list { display: flex; flex-direction: column; gap: 8px; }
+    .theme-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--border); background: var(--bg-card); cursor: pointer; transition: border-color 0.15s, background 0.15s, transform 0.12s var(--ease-spring); }
+    .theme-row:active { transform: scale(0.99); }
+    .theme-row.active { border-color: var(--red); box-shadow: inset 0 0 0 1px var(--red-glow); background: var(--accent-faint); }
+    .theme-row .dots { display: flex; gap: 5px; flex-shrink: 0; }
+    .theme-row .dots i { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.08); }
+    .theme-row .t-meta { flex: 1; min-width: 0; }
+    .theme-row .t-name { font-size: 14px; font-weight: 600; }
+    .theme-row .t-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .theme-row .t-del { width: 32px; height: 32px; border-radius: 10px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: color 0.15s, border-color 0.15s; }
+    .theme-row .t-del svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; }
+    .theme-row .t-del:active { color: var(--red); border-color: var(--red-dim); }
+    .theme-row .check { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .theme-row.active .check { border-color: var(--red); background: var(--red); }
+    .theme-row.active .check::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #fff; }
+
+    /* Theme editor v2 */
+    .te-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .te-header h2 { margin: 0; }
+    .te-header .te-save-status { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+    .wheel-wrap { position: relative; width: 200px; height: 200px; margin: 0 auto 14px; }
+    #color-wheel { width: 200px; height: 200px; border-radius: 50%; cursor: crosshair; touch-action: none; box-shadow: 0 4px 24px rgba(0,0,0,0.4); }
+    .wheel-preview { position: absolute; left: 50%; top: 50%; width: 52px; height: 52px; margin: -26px 0 0 -26px; border-radius: 50%; border: 3px solid var(--bg-elevated); box-shadow: 0 0 0 1px var(--border), 0 4px 12px rgba(0,0,0,0.35); pointer-events: none; }
+    .value-sliders { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+    .value-sliders label { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 12px; color: var(--text-muted); font-weight: 600; }
+    .value-sliders input[type="range"] { flex: 1; }
+    .hex-row { display: flex; align-items: center; justify-content: center; gap: 10px; font-family: ui-monospace, monospace; font-size: 13px; color: var(--text-secondary); margin-bottom: 18px; }
+    .hex-swatch { width: 18px; height: 18px; border-radius: 6px; border: 1px solid var(--border); }
+    .te-section { margin-bottom: 18px; }
+    .te-section-title { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+    .te-base-slider { display: flex; align-items: center; gap: 12px; padding: 4px 0; }
+    .te-base-slider span { font-size: 11px; color: var(--text-muted); font-weight: 600; flex-shrink: 0; }
+    .te-base-slider input[type="range"] { flex: 1; }
+    .te-preview { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 14px; }
+    .te-token { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; font-size: 11px; color: var(--text-secondary); cursor: pointer; transition: background 0.12s; }
+    .te-token:active { background: var(--bg-hover); }
+    .te-token-swatch { width: 20px; height: 20px; border-radius: 6px; border: 1px solid var(--border); flex-shrink: 0; }
+    .te-token-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+    .te-token.has-override .te-token-name { color: var(--red); }
+    .te-actions { display: flex; gap: 8px; margin-top: 12px; }
+    .te-actions .btn { flex: 1; padding: 11px 14px; font-size: 13px; }
+    .te-saved-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+    .te-saved-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-card); cursor: pointer; transition: background 0.15s; }
+    .te-saved-row:active { background: var(--bg-hover); }
+    .te-saved-row.active { border-color: var(--red); background: var(--accent-faint); }
+    .te-saved-row .dots { display: flex; gap: 4px; flex-shrink: 0; }
+    .te-saved-row .dots i { width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.08); }
+    .te-saved-row .tsr-name { flex: 1; font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .te-saved-row .tsr-del { width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+    .te-saved-row .tsr-del svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2; }
+    .te-saved-row .tsr-del:active { color: var(--red); }
+
+    /* Mini color editor sheet */
+    .mini-color-sheet { padding: 20px; }
+    .mini-color-sheet .wheel-wrap { width: 160px; height: 160px; margin-bottom: 12px; }
+    .mini-color-sheet #mini-color-wheel { width: 160px; height: 160px; border-radius: 50%; cursor: crosshair; touch-action: none; box-shadow: 0 4px 24px rgba(0,0,0,0.4); }
+
+    .mgr-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border-subtle); }
+    .mgr-item:last-child { border-bottom: none; }
+    .mgr-item .mgr-icon { width: 44px; height: 44px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border); overflow: hidden; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .mgr-item .mgr-icon img { width: 100%; height: 100%; object-fit: cover; }
+    .mgr-item .mgr-icon svg { width: 20px; height: 20px; stroke: var(--text-muted); fill: none; stroke-width: 1.5; }
+    .mgr-item .mgr-meta { flex: 1; min-width: 0; }
+    .mgr-item .mgr-name { font-weight: 600; font-size: 14px; }
+    .mgr-item .mgr-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .mgr-item .mgr-del { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-muted); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.12s var(--ease-spring), color 0.15s, border-color 0.15s; }
+    .mgr-item .mgr-del svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+    .mgr-item .mgr-del:active { color: var(--red); border-color: var(--red-dim); transform: scale(0.92); }
+
+    .fm-toolbar { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; }
+    .fm-btn { width: auto !important; padding: 10px 14px !important; }
+    .fm-list { max-height: 45vh; overflow-y: auto; }
+    .fm-empty { text-align: center; color: var(--text-muted); padding: 24px; font-size: 13px; }
+    .fm-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border-subtle); }
+    .fm-meta { flex: 1; min-width: 0; }
+    .fm-name { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .fm-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .fm-ico-btn { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-secondary); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.12s var(--ease-spring), border-color 0.15s, color 0.15s; }
+    .fm-ico-btn svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+    .fm-ico-btn:active { border-color: var(--red); color: var(--red); transform: scale(0.92); }
+    .fm-crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-bottom: 10px; font-size: 12px; }
+    .fm-crumb { border: none; background: none; color: var(--red); font-weight: 600; font-size: 12px; cursor: pointer; padding: 4px 2px; }
+    .fm-crumb-sep { color: var(--text-muted); }
+    .fm-actions-bar { display: flex; gap: 8px; margin-bottom: 10px; }
+    .fm-actions-bar .fm-btn { flex: 1; width: auto !important; }
+    .fm-ico { width: 36px; height: 36px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-secondary); flex-shrink: 0; }
+    .fm-ico svg { width: 18px; height: 18px; }
+    .fm-sheet { position: relative; z-index: 5; }
+    .fm-sheet-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 320; animation: fadeIn 0.2s; }
+    .fm-sheet-panel { position: fixed; left: 0; right: 0; bottom: 0; z-index: 330; background: var(--bg-elevated); border-radius: 18px 18px 0 0; padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); border: 1px solid var(--border); border-bottom: none; max-width: 480px; margin: 0 auto; animation: sheetUp 0.28s var(--ease-ios); }
+    .fm-sheet-title { font-weight: 700; margin-bottom: 12px; font-size: 15px; }
+    .fm-sheet-btn { display: block; width: 100%; text-align: left; padding: 14px 12px; border: none; background: transparent; color: var(--text); font-size: 15px; font-weight: 600; border-bottom: 1px solid var(--border-subtle); cursor: pointer; transition: background 0.12s; }
+    .fm-sheet-btn:active { background: var(--bg-hover); }
+    .fm-sheet-btn.danger { color: var(--red); }
+    .fm-sheet-btn:last-child { border-bottom: none; }
+
+    .move-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .move-back { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-secondary); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: transform 0.12s var(--ease-spring), background 0.15s; }
+    .move-back:active { transform: scale(0.9); background: var(--bg-hover); }
+    .move-back svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; }
+    .move-back:disabled { opacity: 0.3; pointer-events: none; }
+    .move-crumbs { flex: 1; font-size: 13px; font-weight: 600; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .move-crumbs .m-current { color: var(--text); }
+    .move-list { max-height: 45vh; overflow-y: auto; border-top: 1px solid var(--border-subtle); margin-bottom: 14px; }
+    .move-row { display: flex; align-items: center; gap: 12px; padding: 12px 8px; cursor: pointer; border-bottom: 1px solid var(--border-subtle); transition: background 0.12s; }
+    .move-row:last-child { border-bottom: none; }
+    .move-row:active { background: var(--bg-hover); }
+    .move-row .mr-icon { width: 36px; height: 36px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--text-secondary); }
+    .move-row .mr-icon svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.6; }
+    .move-row .mr-meta { flex: 1; min-width: 0; }
+    .move-row .mr-name { font-size: 14px; font-weight: 600; }
+    .move-row .mr-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .move-row .mr-chev { width: 14px; height: 14px; stroke: var(--text-muted); fill: none; stroke-width: 2; flex-shrink: 0; }
+    .move-empty { text-align: center; color: var(--text-muted); padding: 24px; font-size: 13px; }
+    .move-new { display: flex; align-items: center; gap: 10px; justify-content: center; padding: 12px; margin-top: 4px; color: var(--red); font-size: 13px; font-weight: 600; background: var(--accent-faint); border: 1px dashed var(--red-dim); border-radius: 12px; cursor: pointer; transition: background 0.15s; }
+    .move-new:active { background: var(--accent-muted); }
+    .move-new svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+    .toast { position: fixed; bottom: calc(100px + var(--safe-bottom)); left: 50%; transform: translateX(-50%) translateY(80px) scale(0.9); background: var(--bg-card); border: 1px solid var(--border); color: var(--text); padding: 12px 18px; border-radius: 12px; font-size: 13px; font-weight: 500; z-index: 800; opacity: 0; transition: opacity 0.25s ease-out, transform 0.4s var(--ease-spring); max-width: 90%; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.45); }
+    .toast.show { transform: translateX(-50%) translateY(0) scale(1); opacity: 1; }
+    .toast.actionable { padding-right: 8px; display: flex; align-items: center; gap: 12px; }
+    .toast .toast-action { border: 1px solid var(--border); background: var(--bg-elevated); color: var(--text); padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; flex-shrink: 0; }
+
+    .icon-preview-row { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; padding: 12px; background: var(--bg-card); border-radius: 14px; border: 1px solid var(--border); }
+    .icon-preview-row .preview-box { width: 56px; height: 56px; border-radius: 14px; overflow: hidden; background: var(--bg); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .icon-preview-row .preview-box img { width: 100%; height: 100%; object-fit: cover; }
+    .icon-preview-row .preview-box svg { width: 24px; height: 24px; stroke: var(--text-muted); fill: none; stroke-width: 1.5; }
+
+    .launch-overlay { position: fixed; inset: 0; z-index: 250; background: var(--bg-card); border-radius: 18px; transform: scale(0.08); opacity: 0; pointer-events: none; transition: transform 0.5s var(--ease-ios), opacity 0.28s ease-out, border-radius 0.5s var(--ease-ios); will-change: transform, opacity, border-radius; }
+    .launch-overlay.active { transform: scale(1); opacity: 1; border-radius: 0; }
+    .launch-overlay.fade-out { opacity: 0; transition: opacity 0.28s ease-in; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div id="launcher">
+      <div class="header">
+        <div class="header-left">
+          <div class="header-title" id="header-title">
+            <div class="logo-mark">
+              <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#fff" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="title-text" id="header-text">ZBIT<span class="accent">DROID</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="breadcrumb" id="breadcrumb"></div>
+      <div class="section-label" id="section-label">Aplicaciones</div>
+      <div class="apps-grid" id="apps-grid"></div>
+      <div class="empty-state" id="empty-state" style="display:none;">
+        <div class="empty-icon">
+          <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        </div>
+        <h3 id="empty-title">Sin aplicaciones</h3>
+        <p id="empty-sub">Pulsa el botón de panel y elige "Instalar app" para empezar.</p>
+      </div>
+    </div>
+
+    <button class="panel-btn" id="panel-btn" aria-label="Panel del sistema">
+      <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+
+    <div class="edit-bar" id="edit-bar">
+      <div class="eb-info" id="edit-bar-info"></div>
+      <div class="eb-actions" id="edit-bar-actions" style="display:flex;gap:6px;"></div>
+    </div>
+
+    <div id="runtime">
+      <div class="immersive-handle" id="immersive-handle"><div class="pill"></div></div>
+      <div class="runtime-bar">
+        <button class="rb-btn" id="btn-close-app" aria-label="Cerrar"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        <div class="app-title" id="runtime-title">App</div>
+        <button class="rb-btn" id="btn-immersive" aria-label="Inmersivo"><svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg></button>
+        <button class="rb-btn" id="btn-system-fs" aria-label="Pantalla completa"><svg viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button>
+        <button class="rb-btn" id="btn-app-menu" aria-label="Opciones"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
+      </div>
+      <iframe id="app-frame" sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin allow-downloads" allow="camera; microphone; geolocation; accelerometer; gyroscope; magnetometer; fullscreen; autoplay; clipboard-read; clipboard-write"></iframe>
+    </div>
+  </div>
+
+  <div class="panel-backdrop" id="panel-backdrop"></div>
+  <div class="panel" id="panel" role="dialog" aria-modal="true">
+    <div class="panel-handle"></div>
+    <div class="panel-hero">
+      <div class="panel-hero-title">ZBIT<span>DROID</span></div>
+      <button class="panel-hero-close" id="panel-close" aria-label="Cerrar"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="panel-section">
+      <div class="panel-section-label">Acciones</div>
+      <div class="panel-item primary" id="pi-install">
+        <div class="pi-icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+        <div class="pi-meta"><div class="pi-name">Instalar app</div><div class="pi-sub">Desde un archivo ZIP</div></div>
+        <svg class="pi-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="panel-item" id="pi-files">
+        <div class="pi-icon"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>
+        <div class="pi-meta"><div class="pi-name">Archivos</div><div class="pi-sub">Recursos y almacén compartido</div></div>
+        <svg class="pi-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="panel-item" id="pi-organize">
+        <div class="pi-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></div>
+        <div class="pi-meta"><div class="pi-name">Organizar</div><div class="pi-sub">Mover, agrupar, reordenar</div></div>
+        <svg class="pi-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>
+    <div class="panel-divider"></div>
+    <div class="panel-section">
+      <div class="panel-section-label">Gestión</div>
+      <div class="panel-item" id="pi-apps">
+        <div class="pi-icon"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>
+        <div class="pi-meta"><div class="pi-name">Aplicaciones</div><div class="pi-sub" id="pi-apps-sub">0 instaladas</div></div>
+        <svg class="pi-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="panel-item" id="pi-storage">
+        <div class="pi-icon"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></div>
+        <div class="pi-meta"><div class="pi-name">Almacenamiento</div><div class="pi-sub" id="pi-storage-sub">0 B</div></div>
+        <svg class="pi-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="panel-item" id="pi-privacy">
+        <div class="pi-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div class="pi-meta"><div class="pi-name">Privacidad</div><div class="pi-sub">Permisos por app</div></div>
+        <svg class="pi-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>
+    <div class="panel-divider"></div>
+    <div class="panel-section" style="padding-bottom:20px;">
+      <div class="panel-section-label">Sistema</div>
+      <div class="panel-item" id="pi-settings">
+        <div class="pi-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+        <div class="pi-meta"><div class="pi-name">Apariencia y ajustes</div><div class="pi-sub">Temas, iconos, fondo</div></div>
+        <svg class="pi-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="panel-item" id="pi-about">
+        <div class="pi-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></div>
+        <div class="pi-meta"><div class="pi-name">Acerca de</div><div class="pi-sub">ZBITDROID v5.6</div></div>
+        <svg class="pi-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-install">
+    <div class="modal">
+      <h2>Instalar mini-app</h2>
+      <p class="modal-sub">Selecciona un ZIP con HTML, CSS, JS e imágenes.</p>
+      <div class="file-drop" id="drop-zone">
+        <input type="file" id="zip-input" accept=".zip,application/zip" />
+        <div class="drop-icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+        <div class="drop-label">Toca o arrastra el ZIP</div>
+        <div class="drop-file" id="selected-file">Ningún archivo seleccionado</div>
+      </div>
+      <div id="install-wizard" style="display:none;margin-top:16px;">
+        <div class="wizard-field"><label>Nombre</label><input type="text" id="wiz-name" maxlength="48" /></div>
+        <div class="wizard-field">
+          <label>HTML de entrada</label>
+          <button type="button" class="select-btn" id="wiz-entry-btn">
+            <span>index.html</span>
+            <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+        </div>
+        <div class="wizard-files" id="wiz-files"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" id="btn-cancel-install">Cancelar</button>
+        <button class="btn btn-primary" id="btn-confirm-install" disabled>Instalar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-manager">
+    <div class="modal">
+      <h2>Aplicaciones instaladas</h2>
+      <p class="modal-sub">Administra el almacenamiento y desinstala apps.</p>
+      <div id="manager-list"></div>
+      <button class="btn btn-secondary" id="btn-close-manager" style="margin-top:16px;">Cerrar</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-storage">
+    <div class="modal">
+      <h2>Almacenamiento</h2>
+      <p class="modal-sub">Uso total y datos guardados por las mini-apps.</p>
+      <div class="settings-summary" style="margin-bottom:14px;">
+        <span>Uso total</span>
+        <span class="ss-value" id="storage-total">0 B</span>
+      </div>
+      <div id="storage-details" style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:18px;"></div>
+      <button class="btn btn-secondary" id="btn-purge-all-data" style="margin-bottom:10px;">Liberar datos guardados por apps</button>
+      <p class="modal-sub" style="font-size:11px;margin:0 0 16px;">Elimina IndexedDB, cachés y localStorage de las mini-apps sin desinstalarlas.</p>
+      <button class="btn btn-secondary" id="btn-close-storage">Cerrar</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-settings">
+    <div class="modal">
+      <h2>Apariencia y ajustes</h2>
+      <p class="modal-sub">Personaliza ZBITDROID.</p>
+
+      <div class="settings-section">
+        <h3>Tema</h3>
+        <div class="theme-list" id="theme-grid"></div>
+        <button class="btn btn-secondary" id="btn-edit-theme" style="margin-top:12px;">Editor de tema personalizado</button>
+      </div>
+
+      <div class="settings-section">
+        <h3>Fondo del inicio</h3>
+        <div class="btn-row" style="margin-top:0;">
+          <button class="btn btn-secondary" id="btn-wallpaper">Elegir imagen</button>
+          <button class="btn btn-secondary" id="btn-wallpaper-clear">Quitar</button>
+        </div>
+        <input type="file" id="wallpaper-input" accept="image/*" style="display:none" />
+        <div style="margin-top:10px;display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:12px;color:var(--text-muted);font-weight:600;">Oscurecer fondo</span>
+          <input type="range" id="wallpaper-dim" min="0" max="80" value="45" style="width:120px;" />
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>Iconos</h3>
+        <div class="seg-control" id="icon-size-seg">
+          <button data-size="compact">Compacto</button>
+          <button data-size="normal" class="active">Normal</button>
+          <button data-size="large">Grande</button>
+        </div>
+        <div class="perm-item" style="margin-top:12px;border:none;padding-top:8px;">
+          <div class="info"><div class="p-name">Mostrar nombres</div></div>
+          <div class="toggle on" id="toggle-show-names"></div>
+        </div>
+        <div class="perm-item" style="border:none;padding-top:4px;">
+          <div class="info"><div class="p-name">Márgenes seguros</div></div>
+          <div class="toggle on" id="toggle-safe-margins"></div>
+        </div>
+        <div style="margin-top:12px;">
+          <div style="font-size:12px;color:var(--text-muted);font-weight:600;margin-bottom:8px;">Al abrir una mini-app</div>
+          <div class="seg-control" id="default-display-mode">
+            <button type="button" data-mode="off" class="active">Normal</button>
+            <button type="button" data-mode="immersive">Inmersivo</button>
+            <button type="button" data-mode="system">Fullscreen</button>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-secondary" id="btn-close-settings">Cerrar</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-theme-editor">
+    <div class="modal">
+      <div class="te-header">
+        <h2 id="te-title">Editor de tema</h2>
+        <span class="te-save-status" id="te-status"></span>
+      </div>
+      <p class="modal-sub" id="te-sub">Ajustá el acento, la base del sistema y los colores individuales.</p>
+
+      <div class="te-section">
+        <div class="te-section-title">Acento</div>
+        <div class="wheel-wrap">
+          <canvas id="color-wheel" width="200" height="200"></canvas>
+          <div class="wheel-preview" id="wheel-preview"></div>
+        </div>
+        <div class="value-sliders">
+          <label>Brillo <input type="range" id="color-value" min="15" max="100" value="55" /></label>
+          <label>Saturación <input type="range" id="color-sat" min="20" max="100" value="85" /></label>
+        </div>
+        <div class="hex-row"><span class="hex-swatch" id="hex-swatch"></span><span id="accent-hex">#e63946</span></div>
+      </div>
+
+      <div class="te-section">
+        <div class="te-section-title">Base del sistema</div>
+        <div class="te-base-slider">
+          <span>Oscuro</span>
+          <input type="range" id="base-slider" min="0" max="100" value="0" />
+          <span>Claro</span>
+        </div>
+      </div>
+
+      <div class="te-section">
+        <div class="te-section-title">Vista previa</div>
+        <div class="te-preview" id="te-preview"></div>
+      </div>
+
+      <div class="te-actions">
+        <button class="btn btn-secondary" id="te-reset">Restablecer</button>
+        <button class="btn btn-primary" id="te-save">Guardar</button>
+      </div>
+      <button class="btn btn-secondary" id="te-close" style="margin-top:10px;">Listo</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-privacy">
+    <div class="modal">
+      <h2>Privacidad</h2>
+      <p class="modal-sub">Toca un permiso para ver y gestionar qué apps lo usan.</p>
+      <div id="privacy-list"></div>
+      <button class="btn btn-secondary" id="btn-close-privacy" style="margin-top:16px;">Cerrar</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-privacy-detail">
+    <div class="modal">
+      <h2 id="privacy-detail-title">Permiso</h2>
+      <p class="modal-sub" id="privacy-detail-sub"></p>
+      <div id="privacy-detail-list"></div>
+      <button class="btn btn-secondary" id="btn-close-privacy-detail" style="margin-top:16px;">Volver</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-app-detail">
+    <div class="modal">
+      <h2 id="detail-app-name">App</h2>
+      <div id="detail-content"></div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:18px;">
+        <button class="btn btn-primary" id="btn-open-from-detail">Abrir</button>
+        <button class="btn btn-secondary" id="btn-rename-app">Renombrar</button>
+        <button class="btn btn-secondary" id="btn-change-icon">Cambiar icono</button>
+        <button class="btn btn-secondary" id="btn-purge-app-data">Limpiar datos guardados</button>
+        <button class="btn btn-danger" id="btn-uninstall">Desinstalar</button>
+        <button class="btn btn-secondary" id="btn-close-detail">Cerrar</button>
+      </div>
+      <input type="file" id="icon-file-input" accept="image/*" style="display:none" />
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-about">
+    <div class="modal">
+      <h2>Acerca de</h2>
+      <p class="modal-sub">ZBITDROID</p>
+      <div class="settings-summary" style="margin-bottom:10px;"><span>Versión</span><span class="ss-value">v5.6</span></div>
+      <div class="settings-summary" style="margin-bottom:10px;"><span>Modo</span><span class="ss-value" id="about-mode">PWA Standalone</span></div>
+      <div class="settings-summary" style="margin-bottom:18px;"><span>Service Worker</span><span class="ss-value" id="about-sw">—</span></div>
+      <p class="modal-sub" style="font-size:12px;line-height:1.5;">Sistema de mini-apps web offline. Cada app corre aislada con IndexedDB, cachés y localStorage namespaced, y no puede alcanzar al shell del sistema.</p>
+      <button class="btn btn-secondary" id="btn-close-about" style="margin-top:16px;">Cerrar</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-files">
+    <div class="modal">
+      <h2>Archivos</h2>
+      <p class="modal-sub">Recursos de cada mini-app y almacén compartido.</p>
+      <div id="file-manager-root"></div>
+      <button class="btn btn-secondary" id="btn-close-files" style="margin-top:16px;">Cerrar</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-move">
+    <div class="modal">
+      <h2>Mover a…</h2>
+      <p class="modal-sub">Elegí la carpeta destino. Podés navegar dentro.</p>
+      <div class="move-header">
+        <button class="move-back" id="move-back" aria-label="Volver"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <div class="move-crumbs" id="move-crumbs"></div>
+      </div>
+      <div class="move-list" id="move-list"></div>
+      <div class="btn-row" style="margin-top:0;"><button class="btn btn-secondary" id="move-cancel">Cancelar</button></div>
+    </div>
+  </div>
+
+  <div class="dialog-overlay" id="dialog-overlay">
+    <div class="dialog" id="dialog">
+      <h3 id="dialog-title">Título</h3>
+      <p id="dialog-message"></p>
+      <input type="text" id="dialog-input" style="display:none;" />
+      <div class="dialog-actions">
+        <button class="btn btn-secondary" id="dialog-cancel">Cancelar</button>
+        <button class="btn btn-primary" id="dialog-confirm">Aceptar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="/lib/jszip.min.js"></script>
+  <script type="module">
+  /* ═════════════════════════════════════════════════════════════════
+     ZBITDROID v5.6
+     ═════════════════════════════════════════════════════════════════ */
+
+  /* ───── 1. Constantes y utilidades ───── */
+  const DB_NAME = 'ZBITDROID_VFS';
+  const DB_VERSION = 2;
+  const STORES = { FILES:'files', APPS:'apps', PERMISSIONS:'permissions' };
+  const APP_PREFIX = '/apps/';
+  const MIME_MAP = { html:'text/html', htm:'text/html', css:'text/css', js:'application/javascript', mjs:'application/javascript', json:'application/json', png:'image/png', jpg:'image/jpeg', jpeg:'image/jpeg', gif:'image/gif', webp:'image/webp', svg:'image/svg+xml', ico:'image/x-icon', woff:'font/woff', woff2:'font/woff2', ttf:'font/ttf', mp3:'audio/mpeg', wav:'audio/wav', mp4:'video/mp4', webm:'video/webm', txt:'text/plain', md:'text/markdown', xml:'application/xml', pdf:'application/pdf' };
+  const SYSTEM_PERMISSIONS = [
+    { id:'camera', name:'Cámara', desc:'Acceso a la cámara' },
+    { id:'microphone', name:'Micrófono', desc:'Acceso al micrófono' },
+    { id:'geolocation', name:'Ubicación', desc:'Acceso a la ubicación' },
+    { id:'notifications', name:'Notificaciones', desc:'Mostrar notificaciones' },
+    { id:'vibration', name:'Vibración', desc:'Hacer vibrar el dispositivo' },
+    { id:'clipboard', name:'Portapapeles', desc:'Leer y escribir' },
+    { id:'share', name:'Compartir', desc:'Diálogo nativo' },
+    { id:'wakelock', name:'Wake Lock', desc:'Mantener pantalla encendida' },
+    { id:'fullscreen', name:'Pantalla completa', desc:'Entrar en fullscreen' },
+    { id:'orientation', name:'Orientación', desc:'Controlar orientación' }
+  ];
+  const getMime = (f) => MIME_MAP[(f.split('.').pop()||'').toLowerCase()] || 'application/octet-stream';
+  function formatBytes(b){ if(!b) return '0 B'; const k=1024, s=['B','KB','MB','GB'], i=Math.floor(Math.log(b)/Math.log(k)); return parseFloat((b/Math.pow(k,i)).toFixed(1)) + ' ' + s[i]; }
+  function sanitizeId(n){ return (n||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40)||'app'; }
+  function toast(msg, dur=2600){ const el = document.getElementById('toast'); if(!el) return; el.className='toast'; el.textContent = msg; el.classList.add('show'); clearTimeout(el._t); el._t = setTimeout(()=>el.classList.remove('show'), dur); }
+  function toastAction(msg, actionLabel, onAction, dur=6000){ const el = document.getElementById('toast'); if(!el) return; el.className='toast actionable'; el.innerHTML=''; const s=document.createElement('span'); s.textContent=msg; const b=document.createElement('button'); b.className='toast-action'; b.textContent=actionLabel; b.addEventListener('click', ()=>{el.classList.remove('show'); onAction?.();}); el.appendChild(s); el.appendChild(b); el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'), dur); }
+  const esc = (s)=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const escAttr = (s)=>esc(s).replace(/"/g,'&quot;');
+  const haptic = (p)=>{ try { navigator.vibrate?.(p); } catch(e){} };
+
+  /* ───── 2. Eventos ───── */
+  const _listeners = new Map();
+  const events = {
+    on(ev, cb){ if(!_listeners.has(ev)) _listeners.set(ev, new Set()); _listeners.get(ev).add(cb); return ()=>_listeners.get(ev)?.delete(cb); },
+    off(ev, cb){ _listeners.get(ev)?.delete(cb); },
+    emit(ev, d){ _listeners.get(ev)?.forEach(cb=>{ try{cb(d);}catch(e){console.error(e);} }); }
+  };
+  const EVENTS = { APPS_CHANGED:'apps:changed', APP_INSTALLED:'app:installed', APP_UNINSTALLED:'app:uninstalled', APP_OPENED:'app:opened', APP_CLOSED:'app:closed', STORAGE_UPDATED:'storage:updated' };
+
+  /* ───── 3. Diálogos universales + options sheet ───── */
+  let _dialogResolve = null;
+  const _dialogOverlay = ()=>document.getElementById('dialog-overlay');
+  function _openDialog({ title, message, input=null, confirmText='Aceptar', cancelText='Cancelar', danger=false }){
+    return new Promise((resolve)=>{
+      const overlay = _dialogOverlay(); if(!overlay){ resolve(null); return; }
+      document.getElementById('dialog-title').textContent = title;
+      const msgEl = document.getElementById('dialog-message');
+      if(message){ msgEl.textContent = message; msgEl.style.display='block'; } else msgEl.style.display='none';
+      const inputEl = document.getElementById('dialog-input');
+      if(input){ inputEl.style.display='block'; inputEl.value = input.value ?? ''; inputEl.placeholder = input.placeholder || ''; inputEl.type = input.type || 'text'; }
+      else { inputEl.style.display='none'; inputEl.value = ''; }
+      const cancelBtn = document.getElementById('dialog-cancel');
+      const confirmBtn = document.getElementById('dialog-confirm');
+      cancelBtn.textContent = cancelText;
+      cancelBtn.style.display = cancelText ? 'block' : 'none';
+      confirmBtn.textContent = confirmText;
+      confirmBtn.className = 'btn ' + (danger ? 'btn-danger-fill' : 'btn-primary');
+      _dialogResolve = resolve;
+      overlay.classList.add('active');
+      if(input) setTimeout(()=>inputEl.focus(), 150);
+    });
+  }
+  function _closeDialog(result){ const o=_dialogOverlay(); o?.classList.remove('active'); const r=_dialogResolve; _dialogResolve=null; r?.(result); }
+  document.getElementById('dialog-cancel')?.addEventListener('click', ()=> _closeDialog(null));
+  document.getElementById('dialog-confirm')?.addEventListener('click', ()=>{ const i=document.getElementById('dialog-input'); if(i.style.display !== 'none') _closeDialog(i.value); else _closeDialog(true); });
+  _dialogOverlay()?.addEventListener('click', (e)=>{ if(e.target === _dialogOverlay()) _closeDialog(null); });
+  document.getElementById('dialog-input')?.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); _closeDialog(document.getElementById('dialog-input').value); } if(e.key==='Escape'){ e.preventDefault(); _closeDialog(null); } });
+  const showConfirm = (o)=> _openDialog({ ...o, input:null, danger: o.danger !== false });
+  const showPrompt = (o)=> _openDialog({ ...o, input: o.input || { value:'' }, danger: false });
+
+  function openOptionsSheet({ title, options, selected, onPick }){
+    document.querySelector('.opts-sheet-backdrop')?.remove();
+    document.querySelector('.opts-sheet')?.remove();
+    const bg = document.createElement('div'); bg.className = 'opts-sheet-backdrop';
+    const sheet = document.createElement('div'); sheet.className = 'opts-sheet';
+    sheet.innerHTML = `<div class="opts-sheet-handle"></div>${title?`<div class="opts-sheet-title">${esc(title)}</div>`:''}${options.map(o=>`<div class="opts-row ${o.value===selected?'selected':''}" data-value="${escAttr(o.value)}"><span class="opts-label">${esc(o.label)}</span><span class="opts-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span></div>`).join('')}`;
+    document.body.appendChild(bg); document.body.appendChild(sheet);
+    let closed=false;
+    const close=()=>{ if(closed) return; closed=true; bg.style.transition='opacity 0.18s'; sheet.style.transition='transform 0.24s cubic-bezier(0.32,0.72,0,1)'; bg.style.opacity='0'; sheet.style.transform='translateY(100%)'; setTimeout(()=>{bg.remove(); sheet.remove();}, 240); };
+    bg.addEventListener('click', close);
+    sheet.querySelectorAll('.opts-row').forEach(row=>{ row.addEventListener('click', ()=>{ onPick(row.dataset.value); close(); }); });
+  }
+
+  /* ───── 4. Preferencias ───── */
+  const PREFS_KEY = 'zbitdroid_prefs_v5';
+  const DEFAULTS = {
+    theme:'carbon-red', accent:'#e63946', wallpaper:null, wallpaperBlur:false,
+    wallpaperDim:0.45, iconSize:'normal', showNames:true, safeMargins:true,
+    defaultDisplayMode:'off',
+    org: { folders: [], placements: {} },
+    customThemes: {},
+    activeCustomThemeId: null,
+    draftTheme: null
+  };
+  const THEMES = {
+    'carbon-red':  { name:'Carbón Rojo',   sub:'Oscuro con acento rojo',  accent:'#e63946', bg:'#0c0c0e', bgElevated:'#141417', bgCard:'#1a1a1f', bgHover:'#24242b', border:'#2e2e36', borderSubtle:'#222228', text:'#f0f0f2', textSecondary:'#9a9aa3', textMuted:'#5c5c66' },
+    'carbon-gold': { name:'Carbón Dorado', sub:'Oscuro con acento dorado',accent:'#d4a017', bg:'#0c0c0e', bgElevated:'#141417', bgCard:'#1a1a1f', bgHover:'#24242b', border:'#2e2e36', borderSubtle:'#222228', text:'#f0f0f2', textSecondary:'#9a9aa3', textMuted:'#5c5c66' },
+    'midnight':    { name:'Medianoche',    sub:'Azul profundo',           accent:'#3b82f6', bg:'#0a0e17', bgElevated:'#111827', bgCard:'#1a2234', bgHover:'#243044', border:'#2a3548', borderSubtle:'#1c2535', text:'#f0f0f2', textSecondary:'#9a9aa3', textMuted:'#5c5c66' },
+    'slate':       { name:'Pizarra',       sub:'Grises neutros',          accent:'#94a3b8', bg:'#0f1115', bgElevated:'#171a21', bgCard:'#1e222b', bgHover:'#2a303c', border:'#2d3340', borderSubtle:'#222832', text:'#f0f0f2', textSecondary:'#9a9aa3', textMuted:'#5c5c66' },
+    'custom':      { name:'Personalizado', sub:'Tu tema',                 accent:'#e63946', bg:'#0c0c0e', bgElevated:'#141417', bgCard:'#1a1a1f', bgHover:'#24242b', border:'#2e2e36', borderSubtle:'#222228', text:'#f0f0f2', textSecondary:'#9a9aa3', textMuted:'#5c5c66' }
+  };
+  function getPrefs(){ try { const raw = localStorage.getItem(PREFS_KEY); if(!raw) return { ...DEFAULTS, org:{folders:[],placements:{}}, customThemes:{}, activeCustomThemeId:null }; const p = { ...DEFAULTS, ...JSON.parse(raw) }; if(!p.org) p.org = { folders:[], placements:{} }; if(!p.org.folders) p.org.folders=[]; if(!p.org.placements) p.org.placements={}; if(!p.customThemes) p.customThemes = {}; if(p.activeCustomThemeId === undefined) p.activeCustomThemeId = null; return p; } catch { return { ...DEFAULTS, org:{folders:[],placements:{}}, customThemes:{}, activeCustomThemeId:null }; } }
+  function setPrefs(partial){ const next = { ...getPrefs(), ...partial }; localStorage.setItem(PREFS_KEY, JSON.stringify(next)); applyPrefs(next); return next; }
+  const getThemes = ()=>THEMES;
+  const getOrg = ()=> getPrefs().org || { folders:[], placements:{} };
+  const setOrg = (org)=> setPrefs({ org });
+
+  /* ───── 5. Color: HSL, HSV helpers ───── */
+  function normalizeHex(hex){ let n=String(hex||'').replace('#',''); if(n.length===3) n=n.split('').map(c=>c+c).join(''); return n.padEnd(6,'0').slice(0,6); }
+  function hexToRgba(hex,a){ const n=normalizeHex(hex), num=parseInt(n,16); return `rgba(${(num>>16)&255},${(num>>8)&255},${num&255},${a})`; }
+  function shadeColor(hex,percent){ const n=normalizeHex(hex), num=parseInt(n,16); let r=(num>>16)+percent,g=((num>>8)&0xff)+percent,b=(num&0xff)+percent; r=Math.max(0,Math.min(255,r)); g=Math.max(0,Math.min(255,g)); b=Math.max(0,Math.min(255,b)); return '#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1); }
+  function hexToHsv(hex){ const n=normalizeHex(hex); let r=parseInt(n.slice(0,2),16)/255, g=parseInt(n.slice(2,4),16)/255, b=parseInt(n.slice(4,6),16)/255; const max=Math.max(r,g,b), min=Math.min(r,g,b), d=max-min; let h=0; if(d!==0){ if(max===r) h=((g-b)/d+(g<b?6:0))/6; else if(max===g) h=((b-r)/d+2)/6; else h=((r-g)/d+4)/6; } const s=max===0?0:d/max; return { h:h*360, s:s*100, v:max*100 }; }
+  function hsvToHex(h,s,v){ s/=100; v/=100; const c=v*s, x=c*(1-Math.abs(((h/60)%2)-1)), m=v-c; let r=0,g=0,b=0; if(h<60){r=c;g=x;} else if(h<120){r=x;g=c;} else if(h<180){g=c;b=x;} else if(h<240){g=x;b=c;} else if(h<300){r=x;b=c;} else {r=c;b=x;} const to=(n)=>Math.round((n+m)*255).toString(16).padStart(2,'0'); return `#${to(r)}${to(g)}${to(b)}`; }
+  function rgbToHsl(r,g,b){ r/=255; g/=255; b/=255; const max=Math.max(r,g,b), min=Math.min(r,g,b); let h=0, s=0; const l=(max+min)/2; const d=max-min; if(d!==0){ s = l>0.5 ? d/(2-max-min) : d/(max+min); if(max===r) h=((g-b)/d+(g<b?6:0))/6; else if(max===g) h=((b-r)/d+2)/6; else h=((r-g)/d+4)/6; } return { h:h*360, s:s*100, l:l*100 }; }
+  function hslToHex(h,s,l){ s/=100; l/=100; const c=(1-Math.abs(2*l-1))*s, x=c*(1-Math.abs(((h/60)%2)-1)), m=l-c/2; let r=0,g=0,b=0; if(h<60){r=c;g=x;} else if(h<120){r=x;g=c;} else if(h<180){g=c;b=x;} else if(h<240){g=x;b=c;} else if(h<300){r=x;b=c;} else {r=c;b=x;} const to=(n)=>Math.round((n+m)*255).toString(16).padStart(2,'0'); return `#${to(r)}${to(g)}${to(b)}`; }
+  function hexToHsl(hex){ const n=normalizeHex(hex); return rgbToHsl(parseInt(n.slice(0,2),16), parseInt(n.slice(2,4),16), parseInt(n.slice(4,6),16)); }
+  function hexToRgb(hex){ const n=normalizeHex(hex); return { r:parseInt(n.slice(0,2),16), g:parseInt(n.slice(2,4),16), b:parseInt(n.slice(4,6),16) }; }
+
+  // Genera paleta completa desde acento + base (0=oscuro, 100=claro)
+  function generatePalette(accentHex, base){
+    const t = Math.max(0, Math.min(100, base)) / 100;
+    // Tomamos el hue/sat del acento para tintar la base
+    const ac = hexToHsl(accentHex);
+    const hue = ac.h;
+    const sat = Math.min(ac.s, 30); // poca saturación para la base
+    // Interpolamos luminosidad: base=0 -> muy oscuro, base=100 -> muy claro
+    const lerp = (a,b,t)=> a + (b-a)*t;
+    const L = {
+      bg:             lerp(5, 96, t),
+      bgElevated:     lerp(8, 93, t),
+      bgCard:         lerp(11, 90, t),
+      bgHover:        lerp(15, 85, t),
+      border:         lerp(19, 80, t),
+      borderSubtle:   lerp(14, 85, t),
+      text:           lerp(95, 8, t),
+      textSecondary:  lerp(65, 35, t),
+      textMuted:      lerp(40, 55, t)
+    };
+    return {
+      bg:             hslToHex(hue, sat, L.bg),
+      bgElevated:     hslToHex(hue, sat, L.bgElevated),
+      bgCard:         hslToHex(hue, sat, L.bgCard),
+      bgHover:        hslToHex(hue, sat, L.bgHover),
+      border:         hslToHex(hue, sat, L.border),
+      borderSubtle:   hslToHex(hue, sat, L.borderSubtle),
+      text:           hslToHex(hue, 8, L.text),
+      textSecondary:  hslToHex(hue, 5, L.textSecondary),
+      textMuted:      hslToHex(hue, 5, L.textMuted)
+    };
+  }
+
+  // Aplica un tema (built-in o custom con tokens)
+  function applyThemeTokens(tokens){
+    const root = document.documentElement;
+    root.style.setProperty('--bg', tokens.bg);
+    root.style.setProperty('--bg-elevated', tokens.bgElevated);
+    root.style.setProperty('--bg-card', tokens.bgCard);
+    root.style.setProperty('--bg-hover', tokens.bgHover);
+    root.style.setProperty('--border', tokens.border);
+    root.style.setProperty('--border-subtle', tokens.borderSubtle);
+    root.style.setProperty('--text', tokens.text);
+    root.style.setProperty('--text-secondary', tokens.textSecondary);
+    root.style.setProperty('--text-muted', tokens.textMuted);
+    const accent = tokens.accent;
+    root.style.setProperty('--red', accent);
+    root.style.setProperty('--red-dim', shadeColor(accent,-28));
+    root.style.setProperty('--red-glow', hexToRgba(accent,0.35));
+    root.style.setProperty('--accent-soft', hexToRgba(accent,0.10));
+    root.style.setProperty('--accent-muted', hexToRgba(accent,0.14));
+    root.style.setProperty('--accent-faint', hexToRgba(accent,0.07));
+    const meta=document.querySelector('meta[name="theme-color"]'); if(meta) meta.setAttribute('content', tokens.bg);
+    document.body.style.background = tokens.bg;
+  }
+
+  function applyPrefs(prefs = getPrefs()){
+    let tokens;
+    if(prefs.theme === 'custom'){
+      const activeId = prefs.activeCustomThemeId;
+      if(activeId && prefs.customThemes[activeId]){
+        tokens = { ...prefs.customThemes[activeId].tokens, accent: prefs.customThemes[activeId].accent };
+      } else if(prefs.draftTheme){
+        tokens = { ...prefs.draftTheme.tokens, accent: prefs.draftTheme.accent };
+      } else {
+        // Fallback: genera desde accent + base oscuro
+        tokens = { ...generatePalette(prefs.accent || '#e63946', 0), accent: prefs.accent || '#e63946' };
+      }
+    } else {
+      const base = THEMES[prefs.theme] || THEMES['carbon-red'];
+      tokens = { ...base, accent: base.accent };
+    }
+    applyThemeTokens(tokens);
+    const launcher=document.getElementById('launcher');
+    if(launcher){
+      if(prefs.wallpaper){
+        const dim=prefs.wallpaperDim ?? 0.45;
+        launcher.style.backgroundImage = `linear-gradient(rgba(0,0,0,${dim}), rgba(0,0,0,${dim})), url(${prefs.wallpaper})`;
+        launcher.style.backgroundSize='cover'; launcher.style.backgroundPosition='center';
+        launcher.classList.add('has-wallpaper');
+      } else { launcher.style.backgroundImage=''; launcher.classList.remove('has-wallpaper'); }
+    }
+    document.body.dataset.iconSize = prefs.iconSize || 'normal';
+    document.body.dataset.showNames = prefs.showNames !== false ? '1' : '0';
+    document.body.dataset.safeMargins = prefs.safeMargins !== false ? '1' : '0';
+  }
+
+  async function setWallpaperFromFile(file){
+    if(!file || !file.type.startsWith('image/')) throw new Error('Imagen no válida');
+    const dataUrl = await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); });
+    return setPrefs({ wallpaper: dataUrl });
+  }
+
+  function drawColorWheel(canvas,value=90){
+    const ctx=canvas.getContext('2d'), size=canvas.width, cx=size/2, cy=size/2, radius=size/2-2;
+    const img=ctx.createImageData(size,size), data=img.data, v=Math.max(0.15,Math.min(1,value/100));
+    for(let y=0;y<size;y++) for(let x=0;x<size;x++){
+      const dx=x-cx, dy=y-cy, dist=Math.sqrt(dx*dx+dy*dy), i=(y*size+x)*4;
+      if(dist>radius){ data[i+3]=0; continue; }
+      let angle=Math.atan2(dy,dx)*(180/Math.PI); if(angle<0) angle+=360;
+      const sat=dist/radius, hex=hsvToHex(angle,sat*100,v*100), n=normalizeHex(hex);
+      data[i]=parseInt(n.slice(0,2),16); data[i+1]=parseInt(n.slice(2,4),16); data[i+2]=parseInt(n.slice(4,6),16); data[i+3]=255;
+    }
+    ctx.putImageData(img,0,0);
+    ctx.beginPath(); ctx.arc(cx,cy,radius,0,Math.PI*2); ctx.strokeStyle='rgba(255,255,255,0.12)'; ctx.lineWidth=2; ctx.stroke();
+  }
+  function colorFromWheelEvent(canvas,clientX,clientY,value){
+    const rect=canvas.getBoundingClientRect(), scaleX=canvas.width/rect.width, scaleY=canvas.height/rect.height;
+    const x=(clientX-rect.left)*scaleX, y=(clientY-rect.top)*scaleY;
+    const cx=canvas.width/2, cy=canvas.height/2, dx=x-cx, dy=y-cy, dist=Math.sqrt(dx*dx+dy*dy), radius=canvas.width/2-2;
+    if(dist>radius) return null;
+    let angle=Math.atan2(dy,dx)*(180/Math.PI); if(angle<0) angle+=360;
+    const sat=Math.min(1,dist/radius)*100;
+    return hsvToHex(angle,sat,value);
+  }
+
+  /* ───── 6. IndexedDB VFS ───── */
+  let dbInstance = null;
+  function openDB(){ if(dbInstance) return Promise.resolve(dbInstance); return new Promise((resolve,reject)=>{ const req = indexedDB.open(DB_NAME, DB_VERSION); req.onerror = ()=>reject(req.error); req.onsuccess = ()=>{ dbInstance = req.result; resolve(dbInstance); }; req.onupgradeneeded = (e)=>{ const db = e.target.result; if(!db.objectStoreNames.contains(STORES.FILES)){ const files = db.createObjectStore(STORES.FILES,{keyPath:'key'}); files.createIndex('appId','appId',{unique:false}); } if(!db.objectStoreNames.contains(STORES.APPS)) db.createObjectStore(STORES.APPS,{keyPath:'id'}); if(!db.objectStoreNames.contains(STORES.PERMISSIONS)) db.createObjectStore(STORES.PERMISSIONS,{keyPath:'appId'}); if(!db.objectStoreNames.contains('shared')) db.createObjectStore('shared',{keyPath:'path'}); }; }); }
+  async function putFile(appId,path,blob,mime){ const db = await openDB(); return new Promise((resolve,reject)=>{ const tx = db.transaction(STORES.FILES,'readwrite'); const record = { key:`${appId}:${path}`, appId, path, blob, mime, size:blob.size, updatedAt:Date.now() }; const req = tx.objectStore(STORES.FILES).put(record); req.onsuccess = ()=>resolve(record); req.onerror = ()=>reject(req.error); }); }
+  async function getFile(appId,path){ const db = await openDB(); return new Promise((resolve,reject)=>{ const tx = db.transaction(STORES.FILES,'readonly'); const req = tx.objectStore(STORES.FILES).get(`${appId}:${path}`); req.onsuccess = ()=>resolve(req.result||null); req.onerror = ()=>reject(req.error); }); }
+  async function listAppFiles(appId){ const db = await openDB(); return new Promise((resolve,reject)=>{ const tx = db.transaction(STORES.FILES,'readonly'); const idx = tx.objectStore(STORES.FILES).index('appId'); const req = idx.getAll(IDBKeyRange.only(appId)); req.onsuccess = ()=>{ const rows = (req.result||[]).map(r=>({path:r.path,size:r.size,mime:r.mime,updatedAt:r.updatedAt})); rows.sort((a,b)=>a.path.localeCompare(b.path)); resolve(rows); }; req.onerror = ()=>reject(req.error); }); }
+  async function deleteFile(appId,path){ const db = await openDB(); return new Promise((resolve,reject)=>{ const tx = db.transaction(STORES.FILES,'readwrite'); const req = tx.objectStore(STORES.FILES).delete(`${appId}:${path}`); req.onsuccess = ()=>resolve(); req.onerror = ()=>reject(req.error); }); }
+  async function deleteAppFiles(appId){ const db = await openDB(); return new Promise((resolve,reject)=>{ const tx = db.transaction(STORES.FILES,'readwrite'); const idx = tx.objectStore(STORES.FILES).index('appId'); const req = idx.openCursor(IDBKeyRange.only(appId)); req.onsuccess = (e)=>{ const c=e.target.result; if(c){ c.delete(); c.continue(); } }; tx.oncomplete = ()=>resolve(); tx.onerror = ()=>reject(tx.error); }); }
+  async function putApp(meta){ const db = await openDB(); return new Promise((resolve,reject)=>{ const tx = db.transaction(STORES.APPS,'readwrite'); const req = tx.objectStore(STORES.APPS).put(meta); req.onsuccess = ()=>resolve(meta); req.onerror = ()=>reject(req.error); }); }
+  async function getApp(id){ const db = await openDB(); return new Promise((resolve,reject)=>{ const tx = db.transaction(STORES.APPS,'readonly'); const req = tx.objectStore(STORES.APPS).get(id); req.onsuccess = ()=>resolve(req.result||null); req.onerror = ()=>reject(req.error); }); }
+  async function getAllApps(){ const db = await openDB(); return new Promise((resolve,reject)=>{ const tx = db.transaction(STORES.APPS,'readonly'); const req = tx.objectStore(STORES.APPS).getAll(); req.onsuccess = ()=>resolve(req.result||[]); req.onerror = ()=>reject(req.error); }); }
+  async function deleteAppMeta(id){ const db = await openDB(); return new Promise((resolve,reject)=>{ const tx = db.transaction(STORES.APPS,'readwrite'); const req = tx.objectStore(STORES.APPS).delete(id); req.onsuccess = ()=>resolve(); req.onerror = ()=>reject(req.error); }); }
+  async function getAppPermissions(appId){ const db = await openDB(); return new Promise((resolve,reject)=>{ const tx = db.transaction(STORES.PERMISSIONS,'readonly'); const req = tx.objectStore(STORES.PERMISSIONS).get(appId); req.onsuccess = ()=>resolve(req.result?.permissions||{}); req.onerror = ()=>reject(req.error); }); }
+  async function setAppPermissions(appId,permissions){ const db = await openDB(); return new Promise((resolve,reject)=>{ const tx = db.transaction(STORES.PERMISSIONS,'readwrite'); const req = tx.objectStore(STORES.PERMISSIONS).put({ appId, permissions, updatedAt:Date.now() }); req.onsuccess = ()=>resolve(permissions); req.onerror = ()=>reject(req.error); }); }
+  async function deleteAppPermissions(appId){ const db = await openDB(); return new Promise((resolve,reject)=>{ const tx = db.transaction(STORES.PERMISSIONS,'readwrite'); const req = tx.objectStore(STORES.PERMISSIONS).delete(appId); req.onsuccess = ()=>resolve(); req.onerror = ()=>reject(req.error); }); }
+  async function putSharedFile(path,blob,mime){ const db = await openDB(); if(![...db.objectStoreNames].includes('shared')){ db.close(); dbInstance=null; await upgradeSharedStore(); } const db2 = await openDB(); return new Promise((resolve,reject)=>{ try { const tx = db2.transaction('shared','readwrite'); const record = { path, blob, mime, size:blob.size, updatedAt:Date.now() }; const req = tx.objectStore('shared').put(record); req.onsuccess = ()=>resolve(record); req.onerror = ()=>reject(req.error); } catch(e){ reject(e); } }); }
+  async function getSharedFile(path){ const db = await openDB(); if(![...db.objectStoreNames].includes('shared')) return null; return new Promise((resolve,reject)=>{ const tx = db.transaction('shared','readonly'); const req = tx.objectStore('shared').get(path); req.onsuccess = ()=>resolve(req.result||null); req.onerror = ()=>reject(req.error); }); }
+  async function listSharedFiles(){ const db = await openDB(); if(![...db.objectStoreNames].includes('shared')) return []; return new Promise((resolve,reject)=>{ const tx = db.transaction('shared','readonly'); const req = tx.objectStore('shared').getAll(); req.onsuccess = ()=>{ const rows = (req.result||[]).map(r=>({path:r.path,size:r.size,mime:r.mime,updatedAt:r.updatedAt})); rows.sort((a,b)=>a.path.localeCompare(b.path)); resolve(rows); }; req.onerror = ()=>reject(req.error); }); }
+  async function deleteSharedFile(path){ const db = await openDB(); if(![...db.objectStoreNames].includes('shared')) return; return new Promise((resolve,reject)=>{ const tx = db.transaction('shared','readwrite'); const req = tx.objectStore('shared').delete(path); req.onsuccess = ()=>resolve(); req.onerror = ()=>reject(req.error); }); }
+  function upgradeSharedStore(){ return new Promise((resolve,reject)=>{ const request = indexedDB.open(DB_NAME, 2); request.onupgradeneeded = (e)=>{ const db = e.target.result; if(!db.objectStoreNames.contains(STORES.FILES)){ const f = db.createObjectStore(STORES.FILES,{keyPath:'key'}); f.createIndex('appId','appId',{unique:false}); } if(!db.objectStoreNames.contains(STORES.APPS)) db.createObjectStore(STORES.APPS,{keyPath:'id'}); if(!db.objectStoreNames.contains(STORES.PERMISSIONS)) db.createObjectStore(STORES.PERMISSIONS,{keyPath:'appId'}); if(!db.objectStoreNames.contains('shared')) db.createObjectStore('shared',{keyPath:'path'}); }; request.onsuccess = ()=>{ dbInstance = request.result; resolve(); }; request.onerror = ()=>reject(request.error); }); }
+  async function getStorageUsage(){ const apps = await getAllApps(); let total = 0; const byApp = {}; for(const a of apps){ byApp[a.id]=a.size||0; total+=a.size||0; } const shared = await listSharedFiles(); const sharedSize = shared.reduce((s,f)=>s+(f.size||0),0); total += sharedSize; return { total, byApp, apps:apps.length, sharedSize }; }
+
+  /* ───── 7. ZIP / cuota / lifecycle ───── */
+  async function inspectAppPackage(zipFile){
+    if(typeof JSZip === 'undefined') throw new Error('JSZip no está cargado');
+    const zip = await JSZip.loadAsync(zipFile);
+    const files = []; let manifest = null; let totalSize = 0;
+    const mf = zip.file('manifest.json') || zip.file('app.json');
+    if(mf){ try { manifest = JSON.parse(await mf.async('string')); } catch(e){} }
+    for(const rel of Object.keys(zip.files)){
+      const entry = zip.files[rel];
+      if(entry.dir) continue;
+      if(rel.startsWith('__MACOSX') || rel.startsWith('.')) continue;
+      const path = rel.replace(/^\.\//,'').replace(/^\/+/,'');
+      const blob = await entry.async('blob');
+      const mime = getMime(path);
+      totalSize += blob.size;
+      files.push({ path, blob, mime, size:blob.size });
+    }
+    if(files.length===0) throw new Error('El ZIP está vacío');
+    const htmlFiles = files.filter(f=>/\.html?$/i.test(f.path)).map(f=>f.path);
+    let entryPoint = 'index.html';
+    if(manifest?.start_url) entryPoint = manifest.start_url.replace(/^\//,'');
+    else if(manifest?.main) entryPoint = manifest.main.replace(/^\//,'');
+    else if(zip.file('index.html')) entryPoint = 'index.html';
+    else if(zip.file('src/index.html')) entryPoint = 'src/index.html';
+    else if(zip.file('public/index.html')) entryPoint = 'public/index.html';
+    else if(htmlFiles.length) entryPoint = htmlFiles[0];
+    else throw new Error('No se encontró un HTML de entrada');
+    const name = manifest?.name || manifest?.short_name || zipFile.name.replace(/\.zip$/i,'') || 'Mini App';
+    let iconPath = null;
+    if(manifest?.icons?.[0]?.src){ const p = manifest.icons[0].src.replace(/^\//,''); if(files.some(f=>f.path===p)) iconPath = p; }
+    if(!iconPath){ for(const p of ['icon.png','icon.svg','logo.png','app-icon.png','assets/icon.png']){ if(files.some(f=>f.path===p)){ iconPath=p; break; } } }
+    return { files, manifest, htmlFiles, suggested: { name, shortName: manifest?.short_name||name, entryPoint, iconPath, version: manifest?.version||'1.0.0', description: manifest?.description||'', permissions: manifest?.permissions||[], orientation: manifest?.orientation||'any', size: totalSize, fileCount: files.length, sourceName: zipFile.name } };
+  }
+  function buildInstallPayload(inspected, options={}, forcedId=null){
+    const s = inspected.suggested;
+    const name = (options.name || s.name).trim() || 'Mini App';
+    const entryPoint = options.entryPoint || s.entryPoint;
+    if(!inspected.files.some(f=>f.path===entryPoint)) throw new Error('El punto de entrada no existe: '+entryPoint);
+    const id = forcedId || (sanitizeId(name) + '-' + Date.now().toString(36).slice(-4));
+    const meta = { id, name, shortName: options.shortName||name, displayName: options.displayName||name, description: s.description, version: s.version, entryPoint, iconPath: options.iconPath !== undefined ? options.iconPath : s.iconPath, customIconPath: null, size: s.size, fileCount: s.fileCount, permissions: s.permissions, orientation: s.orientation, installedAt: Date.now(), updatedAt: Date.now(), sourceName: s.sourceName };
+    return { meta, files: inspected.files };
+  }
+  async function checkQuota(extraBytes=0){ const usage = await getStorageUsage(); const totalMB = (usage.total + extraBytes)/(1024*1024); let status='ok', message=''; if(totalMB > 500){ status='critical'; message=`Almacenamiento alto (${formatBytes(usage.total)}).`; } else if(totalMB > 200){ status='warning'; message=`Uso: ${formatBytes(usage.total)}`; } return { status, message, usage, canInstall: status!=='critical' }; }
+  async function installFromInspected(inspected, options={}){
+    const { meta, files } = buildInstallPayload(inspected, options);
+    const quota = await checkQuota(meta.size);
+    if(!quota.canInstall) throw new Error(quota.message||'Sin espacio');
+    try {
+      for(const file of files) await putFile(meta.id, file.path, file.blob, file.mime);
+      if(options.customIconBlob){ await putFile(meta.id, '__custom_icon__', options.customIconBlob, options.customIconMime||'image/png'); meta.customIconPath = '__custom_icon__'; }
+      await putApp(meta);
+    } catch(err){
+      if(err?.name === 'QuotaExceededError' || /quota/i.test(err?.message||'')) throw new Error('Sin espacio de almacenamiento. Liberá datos desde el panel → Almacenamiento.');
+      throw err;
+    }
+    const initialPerms = {};
+    (meta.permissions||[]).forEach(p=>{ initialPerms[p]=false; });
+    await setAppPermissions(meta.id, initialPerms);
+    events.emit(EVENTS.APP_INSTALLED, meta);
+    events.emit(EVENTS.APPS_CHANGED);
+    events.emit(EVENTS.STORAGE_UPDATED);
+    haptic([10,30,20]);
+    toast(`"${meta.displayName||meta.name}" instalada`);
+    return meta;
+  }
+  async function uninstallApp(appId){
+    const app = await getApp(appId);
+    if(!app) throw new Error('La aplicación no existe');
+    await wipeAppOriginData(appId);
+    await deleteAppFiles(appId);
+    await deleteAppMeta(appId);
+    await deleteAppPermissions(appId);
+    events.emit(EVENTS.APP_UNINSTALLED, { id:appId, name:app.name });
+    events.emit(EVENTS.APPS_CHANGED);
+    events.emit(EVENTS.STORAGE_UPDATED);
+    haptic([20,30,20]);
+    toast(`"${app.name}" eliminada`);
+  }
+
+  /* ───── 8. Aislamiento y limpieza ───── */
+  const miniPrefix = (appId)=>`zbit_${appId}_`;
+  async function listMiniAppDBs(appId){ if(!indexedDB.databases) return []; try { const dbs = await indexedDB.databases(); const pre = miniPrefix(appId); return dbs.filter(d=>d.name && d.name.startsWith(pre)).map(d=>d.name); } catch { return []; } }
+  async function listMiniAppCaches(appId){ if(!window.caches) return []; try { const keys = await caches.keys(); const pre = miniPrefix(appId); return keys.filter(k=>k.startsWith(pre)); } catch { return []; } }
+  function listMiniAppLSKeys(appId){ const pre = `zbitls:${appId}:`; const out = []; for(let i=0;i<localStorage.length;i++){ const k = localStorage.key(i); if(k && k.startsWith(pre)) out.push(k); } return out; }
+  async function wipeAppOriginData(appId){
+    let removed = 0;
+    for(const name of await listMiniAppDBs(appId)){ await new Promise((res)=>{ const r = indexedDB.deleteDatabase(name); r.onsuccess = r.onerror = r.onblocked = ()=>{ removed++; res(); }; }); }
+    for(const name of await listMiniAppCaches(appId)){ try { await caches.delete(name); removed++; } catch {} }
+    const lsKeys = listMiniAppLSKeys(appId);
+    lsKeys.forEach(k=>localStorage.removeItem(k));
+    removed += lsKeys.length;
+    return removed;
+  }
+  async function purgeAllMiniAppData(){
+    let removed = 0;
+    if(indexedDB.databases){ try { const dbs = await indexedDB.databases(); for(const db of dbs){ if(db.name && db.name.startsWith('zbit_')){ await new Promise((res)=>{ const r = indexedDB.deleteDatabase(db.name); r.onsuccess = r.onerror = r.onblocked = ()=>{ removed++; res(); }; }); } } } catch {} }
+    if(window.caches){ try { const keys = await caches.keys(); for(const k of keys){ if(k.startsWith('zbit_')){ await caches.delete(k); removed++; } } } catch {} }
+    const toRemove = [];
+    for(let i=0;i<localStorage.length;i++){ const k = localStorage.key(i); if(k && k.startsWith('zbitls:')) toRemove.push(k); }
+    toRemove.forEach(k=>localStorage.removeItem(k));
+    removed += toRemove.length;
+    return removed;
+  }
+  async function countAllMiniAppStorage(){
+    let dbs=0, cachesN=0, ls=0;
+    if(indexedDB.databases){ try { const all = await indexedDB.databases(); dbs = all.filter(d=>d.name && d.name.startsWith('zbit_')).length; } catch {} }
+    if(window.caches){ try { const all = await caches.keys(); cachesN = all.filter(k=>k.startsWith('zbit_')).length; } catch {} }
+    for(let i=0;i<localStorage.length;i++){ if(localStorage.key(i)?.startsWith('zbitls:')) ls++; }
+    return { dbs, cachesN, ls, text: `${dbs} BD · ${cachesN} cachés · ${ls} claves` };
+  }
+
+  /* ───── 9. Runtime / iframe / bridge ───── */
+  let currentAppId = null;
+  let currentIframe = null;
+  let _currentBridgeApp = null;
+  function openInIframe(app, iframeEl){
+    if(!iframeEl) return;
+    closeIframe(iframeEl);
+    currentAppId = app.id; currentIframe = iframeEl; _currentBridgeApp = app;
+    const entry = app.entryPoint || 'index.html';
+    const url = `${APP_PREFIX}${app.id}/${entry}`;
+    iframeEl.setAttribute('sandbox','allow-scripts allow-forms allow-modals allow-popups allow-same-origin allow-downloads allow-pointer-lock');
+    iframeEl.setAttribute('allow','camera; microphone; geolocation; accelerometer; gyroscope; magnetometer; fullscreen; autoplay; clipboard-read; clipboard-write; display-capture');
+    iframeEl.src = url;
+    return url;
+  }
+  function closeIframe(iframeEl){ if(iframeEl){ iframeEl.src='about:blank'; try { iframeEl.contentWindow?.location?.replace('about:blank'); } catch(e){} } currentAppId=null; currentIframe=null; _currentBridgeApp=null; }
+  const getCurrentAppId = ()=>currentAppId;
+  const MSG = { REQUEST_PERMISSION:'zbit:request-permission', CALL_API:'zbit:call-api', GET_PERMISSIONS:'zbit:get-permissions', READY:'zbit:ready', PERMISSION_RESULT:'zbit:permission-result', API_RESULT:'zbit:api-result', PERMISSIONS_LIST:'zbit:permissions-list', ERROR:'zbit:error' };
+  function createMessage(type, payload={}, requestId=null){ return { source:'zbitdroid', type, payload, requestId: requestId||Math.random().toString(36).slice(2), timestamp:Date.now() }; }
+  function attachGlobalBridgeHandler(){
+    window.addEventListener('message', async (event)=>{
+      const win = currentIframe?.contentWindow;
+      if(!win || event.source !== win) return;
+      const app = _currentBridgeApp; if(!app) return;
+      if(!event.data || event.data.source !== 'zbitdroid-client') return;
+      const { type, payload, requestId } = event.data;
+      try {
+        if(type === 'zbit:ready'){ if(currentIframe) currentIframe._zbitReady = true; return; }
+        if(type === MSG.GET_PERMISSIONS){ const perms = await getAppPermissions(app.id); win.postMessage(createMessage(MSG.PERMISSIONS_LIST, perms, requestId), '*'); }
+        else if(type === MSG.REQUEST_PERMISSION){ const { permission } = payload; const current = await getAppPermissions(app.id); current[permission]=true; await setAppPermissions(app.id, current); win.postMessage(createMessage(MSG.PERMISSION_RESULT, { permission, granted:true }, requestId), '*'); }
+        else if(type === MSG.CALL_API){
+          const { api, method, args } = payload;
+          const perms = await getAppPermissions(app.id);
+          const required = { geolocation:'geolocation', vibrate:'vibration', notification:'notifications', clipboard:'clipboard', share:'share', wakelock:'wakelock', fullscreen:'fullscreen', mediaDevices:'camera', orientation:'orientation' }[api];
+          if(required && !perms[required]){ win.postMessage(createMessage(MSG.ERROR, { message:`Permiso denegado: ${required}. Actívalo en Privacidad.` }, requestId), '*'); return; }
+          const result = await executeNativeAPI(api, method, args||[]);
+          win.postMessage(createMessage(MSG.API_RESULT, { result }, requestId), '*');
+        }
+      } catch(err){ win.postMessage(createMessage(MSG.ERROR, { message: err.message }, requestId), '*'); }
+    });
+  }
+  async function executeNativeAPI(api, method, args=[]){
+    switch(api){
+      case 'geolocation': return handleGeolocation(method, args);
+      case 'vibrate': return handleVibrate(args);
+      case 'notification': return handleNotification(method, args);
+      case 'clipboard': return handleClipboard(method, args);
+      case 'share': return handleShare(args);
+      case 'wakelock': return handleWakeLock(method);
+      case 'fullscreen': return handleFullscreen(method);
+      case 'mediaDevices': return handleMediaDevices(method, args);
+      case 'battery': return handleBattery();
+      case 'orientation': return handleOrientation(method, args);
+      default: throw new Error(`API no soportada: ${api}`);
+    }
+  }
+  function handleGeolocation(method, args){ return new Promise((resolve,reject)=>{ if(!navigator.geolocation) return reject(new Error('Geolocalización no disponible')); if(method==='getCurrentPosition'){ navigator.geolocation.getCurrentPosition(pos=>resolve({ coords:{ latitude:pos.coords.latitude, longitude:pos.coords.longitude, accuracy:pos.coords.accuracy, altitude:pos.coords.altitude, altitudeAccuracy:pos.coords.altitudeAccuracy, heading:pos.coords.heading, speed:pos.coords.speed }, timestamp:pos.timestamp }), err=>reject(new Error(err.message)), args[0]||{}); } else reject(new Error(`Método no soportado: ${method}`)); }); }
+  function handleVibrate(args){ if(!navigator.vibrate) throw new Error('Vibración no disponible'); return { success: navigator.vibrate(args[0] ?? 200) }; }
+  async function handleNotification(method, args){ if(!('Notification' in window)) throw new Error('Notificaciones no disponibles'); if(method==='requestPermission') return { permission: await Notification.requestPermission() }; if(method==='show'){ const [title, options={}] = args; if(Notification.permission!=='granted') throw new Error('Permiso no concedido'); new Notification(title, options); return { success:true }; } throw new Error(`Método no soportado: ${method}`); }
+  async function handleClipboard(method, args){ if(!navigator.clipboard) throw new Error('Clipboard no disponible'); if(method==='writeText'){ await navigator.clipboard.writeText(args[0]||''); return {success:true}; } if(method==='readText') return { text: await navigator.clipboard.readText() }; throw new Error(`Método no soportado: ${method}`); }
+  async function handleShare(args){ if(!navigator.share) throw new Error('Web Share no disponible'); await navigator.share(args[0]||{}); return {success:true}; }
+  let wakeLock = null;
+  async function handleWakeLock(method){ if(!('wakeLock' in navigator)) throw new Error('Wake Lock no disponible'); if(method==='request'){ wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release',()=>{wakeLock=null;}); return {active:true}; } if(method==='release'){ if(wakeLock){ await wakeLock.release(); wakeLock=null; } return {active:false}; } throw new Error(`Método no soportado: ${method}`); }
+  function handleFullscreen(method){ const doc=document; if(method==='request'){ const el=doc.documentElement; (el.requestFullscreen||el.webkitRequestFullscreen)?.call(el); return {success:true}; } if(method==='exit'){ (doc.exitFullscreen||doc.webkitExitFullscreen)?.call(doc); return {success:true}; } throw new Error(`Método no soportado: ${method}`); }
+  async function handleMediaDevices(method){ if(!navigator.mediaDevices) throw new Error('mediaDevices no disponible'); if(method==='enumerateDevices'){ const devices = await navigator.mediaDevices.enumerateDevices(); return devices.map(d=>({deviceId:d.deviceId,kind:d.kind,label:d.label,groupId:d.groupId})); } throw new Error(`Método no soportado: ${method}`); }
+  async function handleBattery(){ if(!navigator.getBattery) throw new Error('Battery API no disponible'); const bat = await navigator.getBattery(); return { charging:bat.charging, chargingTime:bat.chargingTime, dischargingTime:bat.dischargingTime, level:bat.level }; }
+  function handleOrientation(method, args){ if(method==='lock'){ if(screen.orientation?.lock) return screen.orientation.lock(args[0]||'any').then(()=>({success:true})); throw new Error('Orientation lock no disponible'); } if(method==='unlock'){ if(screen.orientation?.unlock){ screen.orientation.unlock(); return {success:true}; } } throw new Error(`Método no soportado: ${method}`); }
+
+  const runtimeEl = ()=>document.getElementById('runtime');
+  const frameEl = ()=>document.getElementById('app-frame');
+  const titleEl = ()=>document.getElementById('runtime-title');
+  let isImmersive = false;
+  let isSystemFs = false;
+  let swipeBound = false;
+  let _lastLaunchedRect = null;
+  let _silenceTimer = null;
+
+  async function ensureSWReady(timeoutMs=4000){
+    if(!('serviceWorker' in navigator)) return false;
+    const start = Date.now();
+    while(Date.now()-start < timeoutMs){
+      const reg = await navigator.serviceWorker.getRegistration();
+      if(reg?.active && navigator.serviceWorker.controller) return true;
+      if(reg?.active) reg.active.postMessage({type:'CLIENTS_CLAIM'});
+      await new Promise(r=>setTimeout(r,150));
+    }
+    return !!navigator.serviceWorker.controller;
+  }
+
+  async function launchApp(appId, originRect){
+    const app = await getApp(appId);
+    if(!app) throw new Error('Aplicación no encontrada');
+    const runtime = runtimeEl(), iframe = frameEl(), title = titleEl();
+    if(!runtime || !iframe) return;
+    _lastLaunchedRect = originRect || null;
+    await exitSystemFullscreen();
+    setImmersive(false);
+    title.textContent = app.displayName || app.name || 'App';
+    runtime.classList.add('active');
+    const original = title.textContent;
+    title.textContent = 'Cargando...';
+    await ensureSWReady();
+    iframe.onload = null; iframe.onerror = null;
+    let loaded = false;
+    iframe._zbitReady = false;
+    iframe.onload = ()=>{
+      loaded = true; title.textContent = original;
+      clearTimeout(_silenceTimer);
+      _silenceTimer = setTimeout(()=>{
+        if(!iframe._zbitReady && getCurrentAppId() === appId){
+          toastAction('La app no responde', 'Recargar', ()=>{ try { iframe.contentWindow.location.reload(); } catch(e){} }, 8000);
+        }
+      }, 8000);
+    };
+    iframe.onerror = ()=>{ title.textContent = original; toast('Error al cargar la app'); };
+    setTimeout(()=>{ if(!loaded && getCurrentAppId()===appId) title.textContent = original; }, 5000);
+    openInIframe(app, iframe);
+    bindImmersiveGestures();
+    events.emit(EVENTS.APP_OPENED, app);
+    const mode = getPrefs().defaultDisplayMode || 'off';
+    if(mode==='immersive') setTimeout(()=>setImmersive(true), 300);
+    else if(mode==='system') setTimeout(()=>enterSystemFullscreen().catch(()=>{}), 400);
+  }
+
+  async function closeCurrentApp(){
+    const runtime = runtimeEl(), iframe = frameEl();
+    if(!runtime || !iframe) return;
+    clearTimeout(_silenceTimer);
+    const appId = getCurrentAppId();
+    await exitSystemFullscreen();
+    closeIframe(iframe);
+    runtime.classList.remove('active');
+    setImmersive(false);
+    unbindImmersiveGestures();
+    if(appId) events.emit(EVENTS.APP_CLOSED, { id:appId });
+  }
+
+  const isAppRunning = ()=>!!getCurrentAppId();
+  const toggleImmersive = ()=>{ if(isSystemFs) return; setImmersive(!isImmersive); };
+  function setImmersive(on){ isImmersive = !!on; const r = runtimeEl(); if(r) r.classList.toggle('immersive', isImmersive && !isSystemFs); updateChromeButtons(); updateHandle(); }
+  async function enterSystemFullscreen(){
+    const runtime = runtimeEl();
+    if(!runtime || !runtime.classList.contains('active')) return;
+    try {
+      if(!document.fullscreenElement){ const req = runtime.requestFullscreen?.bind(runtime) || runtime.webkitRequestFullscreen?.bind(runtime); if(req) await req(); }
+      isSystemFs = true;
+      runtime.classList.add('immersive'); runtime.classList.add('system-fs');
+      updateChromeButtons(); updateHandle();
+    } catch(e){ console.warn('[Runtime] Fullscreen no disponible:', e); toast('Pantalla completa no disponible'); setImmersive(true); }
+  }
+  async function exitSystemFullscreen(){
+    isSystemFs = false;
+    const runtime = runtimeEl();
+    if(runtime) runtime.classList.remove('system-fs');
+    try { if(document.fullscreenElement) await (document.exitFullscreen?.() || document.webkitExitFullscreen?.()); } catch(e){}
+    if(runtime) runtime.classList.remove('immersive');
+    isImmersive = false;
+    updateChromeButtons(); updateHandle();
+  }
+  const isSystemFullscreen = ()=>isSystemFs;
+  async function revealChrome(){ if(isSystemFs) await exitSystemFullscreen(); else setImmersive(false); }
+  function updateHandle(){ const h = document.getElementById('immersive-handle'); if(!h) return; const show = (isImmersive || isSystemFs) && !!runtimeEl()?.classList.contains('active'); h.classList.toggle('visible', show); }
+  function updateChromeButtons(){ const b1 = document.getElementById('btn-immersive'); const b2 = document.getElementById('btn-system-fs'); if(b1) b1.classList.toggle('active-fs', isImmersive && !isSystemFs); if(b2) b2.classList.toggle('active-fs', isSystemFs); }
+  document.addEventListener('fullscreenchange', ()=>{ if(!document.fullscreenElement && isSystemFs){ isSystemFs = false; const r = runtimeEl(); if(r){ r.classList.remove('system-fs'); r.classList.remove('immersive'); } isImmersive = false; updateChromeButtons(); updateHandle(); } });
+  let touchStartY = null, touchStartX = null;
+  function onTouchStart(e){ if(!isImmersive && !isSystemFs) return; const t = e.touches?.[0]; if(!t) return; if(t.clientY < 56){ touchStartY = t.clientY; touchStartX = t.clientX; } else touchStartY = null; }
+  function onTouchMove(e){ if(touchStartY === null) return; const t = e.touches?.[0]; if(!t) return; const dy = t.clientY - touchStartY, dx = Math.abs(t.clientX - (touchStartX||0)); if(dy > 40 && dx < 90){ touchStartY = null; revealChrome(); } }
+  function onTouchEnd(){ touchStartY = null; }
+  function bindImmersiveGestures(){ if(swipeBound) return; const r = runtimeEl(); if(!r) return; r.addEventListener('touchstart', onTouchStart, {passive:true}); r.addEventListener('touchmove', onTouchMove, {passive:true}); r.addEventListener('touchend', onTouchEnd, {passive:true}); swipeBound = true; }
+  function unbindImmersiveGestures(){ const r = runtimeEl(); if(!r || !swipeBound) return; r.removeEventListener('touchstart', onTouchStart); r.removeEventListener('touchmove', onTouchMove); r.removeEventListener('touchend', onTouchEnd); swipeBound = false; }
+
+  /* ───── 10. Launcher + selección ───── */
+  const DEFAULT_SVG = `<div class="default-icon"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>`;
+  const FOLDER_SVG = `<div class="default-icon"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>`;
+  const CHECK_SVG = `<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>`;
+  let editMode = false;
+  let currentFolderId = null;
+  let openAppDetail = ()=>{};
+  const selectedItems = new Map();
+  const _iconUrlCache = new Map();
+  const _appsById = new Map();
+  const _foldersById = new Map();
+
+  function setEditMode(on){
+    editMode = !!on;
+    document.body.classList.toggle('edit-mode', editMode);
+    if(editMode){ haptic([10,40,10]); } else { selectedItems.clear(); }
+    renderLauncher(); renderEditBar();
+  }
+  function toggleItemSelection(id, type){
+    if(selectedItems.get(id) === type) selectedItems.delete(id); else selectedItems.set(id, type);
+    const el = document.querySelector(`.app-icon[data-id="${id}"]`);
+    if(el) el.classList.toggle('selected', selectedItems.has(id));
+    renderEditBar(); haptic(6);
+  }
+  function renderEditBar(){
+    const info = document.getElementById('edit-bar-info');
+    const actions = document.getElementById('edit-bar-actions');
+    if(!info || !actions) return;
+    const c = selectedItems.size;
+    if(c === 0){
+      info.innerHTML = 'Modo organización<small>Toca apps para seleccionarlas</small>';
+      actions.innerHTML = `<button class="eb-btn done" id="eb-done" aria-label="Listo">${CHECK_SVG}</button>`;
+    } else {
+      info.innerHTML = `${c} seleccionada${c===1?'':'s'}<small>${c>1?'Se aplicará a todas':'Seleccioná más o actuá'}</small>`;
+      actions.innerHTML = `
+        <button class="eb-btn" id="eb-move" aria-label="Mover a..." title="Mover a…"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><polyline points="12 11 12 17"/><polyline points="9 14 12 11 15 14"/></svg></button>
+        <button class="eb-btn" id="eb-new" aria-label="Nueva carpeta" title="Nueva carpeta con selección"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+        <button class="eb-btn danger" id="eb-del" aria-label="Eliminar" title="Eliminar"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+        <button class="eb-btn done" id="eb-done" aria-label="Listo">${CHECK_SVG}</button>
+      `;
+    }
+    document.getElementById('eb-done')?.addEventListener('click', ()=> setEditMode(false));
+    document.getElementById('eb-move')?.addEventListener('click', ()=> openMoveModal());
+    document.getElementById('eb-new')?.addEventListener('click', async ()=>{
+      const name = await showPrompt({ title:'Nueva carpeta', message:'Nombre de la nueva carpeta:', input:{ value:'', placeholder:'Juegos' }, confirmText:'Crear' });
+      if(name === null) return;
+      const folderId = createFolder((name||'').trim() || 'Carpeta', currentFolderId);
+      for(const [id, type] of selectedItems){
+        if(type === 'app') updateAppPlacement(id, { folderId });
+        else if(type === 'folder') updateFolderParent(id, folderId);
+      }
+      selectedItems.clear(); renderLauncher(); renderEditBar(); haptic(10); toast('Carpeta creada');
+    });
+    document.getElementById('eb-del')?.addEventListener('click', async ()=>{
+      const c = selectedItems.size;
+      const ok = await showConfirm({ title:'Eliminar', message:`Se eliminarán ${c} elemento${c===1?'':'s'}${[...selectedItems.values()].includes('folder') ? ' (incluyendo contenido de carpetas)' : ''}.`, confirmText:'Eliminar' });
+      if(!ok) return;
+      for(const [id, type] of [...selectedItems]){
+        if(type === 'app') await uninstallApp(id);
+        else if(type === 'folder') await deleteFolderRecursive(id);
+      }
+      selectedItems.clear(); renderLauncher(); renderEditBar();
+    });
+  }
+
+  function renderBreadcrumb(){
+    const bc = document.getElementById('breadcrumb');
+    if(!bc) return;
+    if(!currentFolderId){ bc.classList.remove('visible'); bc.innerHTML = ''; return; }
+    bc.classList.add('visible');
+    const path = getFolderPath(currentFolderId);
+    bc.innerHTML = path.map((seg, i)=>{
+      const isLast = i === path.length - 1;
+      if(isLast) return `<span class="current">${esc(seg.name)}</span>`;
+      return `<button data-folder="${seg.id ?? ''}">${esc(seg.name)}</button><span class="sep">/</span>`;
+    }).join('');
+    bc.querySelectorAll('button[data-folder]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{ navigateToFolder(btn.dataset.folder || null); });
+    });
+  }
+
+  async function renderLauncher(){
+    const apps = await getAllApps();
+    const gridEl = document.getElementById('apps-grid');
+    const emptyEl = document.getElementById('empty-state');
+    if(!gridEl) return;
+    _iconUrlCache.forEach(u=>URL.revokeObjectURL(u));
+    _iconUrlCache.clear();
+    gridEl.innerHTML = '';
+    const org = normalizeOrg(getOrg(), apps);
+    _appsById.clear(); _foldersById.clear();
+    for(const a of apps) _appsById.set(a.id, a);
+    for(const f of org.folders) _foldersById.set(f.id, f);
+    const items = [];
+    const subfolders = org.folders.filter(f => (f.parentId ?? null) === currentFolderId);
+    for(const f of subfolders) items.push({ type:'folder', folder: f, position: f.position ?? 9999 });
+    for(const app of apps){
+      const pl = org.placements[app.id] || { folderId: null, position: 9999 };
+      if((pl.folderId ?? null) === currentFolderId) items.push({ type:'app', app, position: pl.position ?? 9999 });
+    }
+    items.sort((a, b)=> (a.position - b.position) || ((a.app?.name || a.folder?.name || '').localeCompare(b.app?.name || b.folder?.name || '')));
+    if(!items.length){
+      if(emptyEl){
+        emptyEl.style.display = 'block';
+        if(currentFolderId){ document.getElementById('empty-title').textContent = 'Carpeta vacía'; document.getElementById('empty-sub').textContent = 'En modo organización podés mover apps aquí con "Mover a…".'; }
+        else { document.getElementById('empty-title').textContent = 'Sin aplicaciones'; document.getElementById('empty-sub').textContent = 'Pulsa el botón de panel y elige "Instalar app" para empezar.'; }
+      }
+    } else {
+      if(emptyEl) emptyEl.style.display = 'none';
+      items.forEach((item, i)=>{
+        const el = item.type === 'folder' ? makeFolderEl(item.folder, org, i) : makeAppEl(item.app, item.position, i);
+        const id = item.folder?.id || item.app?.id;
+        if(id && selectedItems.has(id)) el.classList.add('selected');
+        gridEl.appendChild(el);
+      });
+    }
+    setupIconGestures();
+    renderBreadcrumb();
+  }
+  function normalizeOrg(org, apps){
+    const appIds = new Set(apps.map(a=>a.id));
+    const folders = (org.folders||[]).map((f,i)=>({ id: f.id, name: f.name || 'Carpeta', parentId: f.parentId ?? null, position: typeof f.position === 'number' ? f.position : i }));
+    const placements = { ...(org.placements||{}) };
+    Object.keys(placements).forEach(id=>{ if(!appIds.has(id)) delete placements[id]; });
+    apps.forEach((a,i)=>{
+      if(!placements[a.id]) placements[a.id] = { folderId: null, position: 100+i };
+      else { const fid = placements[a.id].folderId; if(fid && !folders.some(f=>f.id===fid)) placements[a.id].folderId = null; }
+    });
+    folders.forEach(f=>{ if(f.parentId && !folders.some(x=>x.id===f.parentId)) f.parentId = null; });
+    return { folders, placements };
+  }
+  function makeAppEl(app, position, animIndex){
+    const el = document.createElement('div');
+    el.className = 'app-icon';
+    el.dataset.id = app.id; el.dataset.type = 'app';
+    el.style.animationDelay = editMode ? '0s' : `${Math.min(animIndex*0.022, 0.5)}s`;
+    el.innerHTML = `<div class="icon-box">${DEFAULT_SVG}<span class="select-mark">${CHECK_SVG}</span></div><div class="name">${esc(app.displayName||app.shortName||app.name)}</div>`;
+    resolveIcon(app).then(html=>{
+      const box = el.querySelector('.icon-box');
+      if(box){ const mark = box.querySelector('.select-mark'); box.innerHTML = html; if(mark) box.appendChild(mark); }
+    });
+    return el;
+  }
+  function makeFolderEl(folder, org, animIndex){
+    const el = document.createElement('div');
+    el.className = 'app-icon folder-icon';
+    el.dataset.id = folder.id; el.dataset.type = 'folder';
+    el.style.animationDelay = editMode ? '0s' : `${Math.min(animIndex*0.022, 0.5)}s`;
+    const count = (org.folders || []).filter(f => (f.parentId ?? null) === folder.id).length + Object.values(org.placements||{}).filter(p => (p.folderId ?? null) === folder.id).length;
+    el.innerHTML = `<div class="icon-box folder-box">${FOLDER_SVG}<span class="folder-badge">${count}</span><span class="select-mark">${CHECK_SVG}</span></div><div class="name">${esc(folder.name)}</div>`;
+    return el;
+  }
+  async function resolveIcon(app){
+    const iconPath = app.customIconPath || app.iconPath;
+    if(!iconPath) return DEFAULT_SVG;
+    try { const file = await getFile(app.id, iconPath); if(file?.blob){ const url = URL.createObjectURL(file.blob); _iconUrlCache.set(app.id, url); return `<img src="${url}" alt="" />`; } } catch(e){}
+    return DEFAULT_SVG;
+  }
+
+  let _iconGesture = null;
+  function setupIconGestures(){
+    const grid = document.getElementById('apps-grid');
+    if(!grid || grid._gesturesBound) return;
+    grid._gesturesBound = true;
+    grid.addEventListener('pointerdown', onGridPointerDown);
+    grid.addEventListener('pointermove', onGridPointerMove);
+    grid.addEventListener('pointerup', onGridPointerUp);
+    grid.addEventListener('pointercancel', onGridPointerCancel);
+    grid.addEventListener('contextmenu', (e)=> e.preventDefault());
+  }
+  function onGridPointerDown(e){
+    if(e.button !== undefined && e.button !== 0) return;
+    if(_iconGesture) return;
+    const el = e.target.closest?.('.app-icon'); if(!el) return;
+    _iconGesture = { el, type: el.dataset.type, id: el.dataset.id, pointerId: e.pointerId, startX: e.clientX, startY: e.clientY, longPressFired: false, timer: null };
+    if(!editMode){
+      _iconGesture.timer = setTimeout(()=>{
+        if(!_iconGesture) return;
+        const g = _iconGesture; _iconGesture = null;
+        haptic(15);
+        setEditMode(true);
+        selectedItems.set(g.id, g.type);
+        const el2 = document.querySelector(`.app-icon[data-id="${g.id}"]`);
+        if(el2) el2.classList.add('selected');
+        renderEditBar();
+      }, 400);
+    }
+  }
+  function onGridPointerMove(e){
+    if(!_iconGesture || _iconGesture.pointerId !== e.pointerId) return;
+    const dx = e.clientX - _iconGesture.startX, dy = e.clientY - _iconGesture.startY;
+    if(Math.hypot(dx, dy) > 12){ if(_iconGesture.timer) clearTimeout(_iconGesture.timer); _iconGesture = null; }
+  }
+  function onGridPointerUp(e){
+    if(!_iconGesture || _iconGesture.pointerId !== e.pointerId) return;
+    const g = _iconGesture; _iconGesture = null;
+    if(g.timer) clearTimeout(g.timer);
+    if(editMode){ toggleItemSelection(g.id, g.type); return; }
+    if(g.type === 'app'){ const app = _appsById.get(g.id); if(app) launchAppWithAnimation(g.id, g.el); }
+    else if(g.type === 'folder'){ navigateToFolder(g.id); }
+  }
+  function onGridPointerCancel(e){
+    if(!_iconGesture) return;
+    if(e && e.pointerId !== undefined && _iconGesture.pointerId !== e.pointerId) return;
+    if(_iconGesture.timer) clearTimeout(_iconGesture.timer);
+    _iconGesture = null;
+  }
+
+  function createFolder(name = 'Carpeta', parentId = null){
+    const org = getOrg();
+    const id = 'f' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+    const siblings = (org.folders || []).filter(f => (f.parentId ?? null) === parentId);
+    const appSiblings = Object.values(org.placements || {}).filter(p => (p.folderId ?? null) === parentId);
+    const maxPos = Math.max(-1, ...siblings.map(f => f.position || 0), ...appSiblings.map(p => p.position || 0));
+    org.folders = org.folders || [];
+    org.folders.push({ id, name: name.trim() || 'Carpeta', parentId, position: maxPos + 1 });
+    setOrg(org); return id;
+  }
+  async function deleteFolderRecursive(folderId){
+    const org = getOrg();
+    const toDelete = new Set();
+    const collect = (fid)=>{ toDelete.add(fid); (org.folders || []).forEach(f => { if((f.parentId ?? null) === fid) collect(f.id); }); };
+    collect(folderId);
+    for(const id of toDelete){ Object.keys(org.placements || {}).forEach(appId=>{ if(org.placements[appId].folderId === id) org.placements[appId].folderId = null; }); }
+    org.folders = (org.folders || []).filter(f => !toDelete.has(f.id));
+    setOrg(org);
+    if(currentFolderId && toDelete.has(currentFolderId)) currentFolderId = null;
+    renderLauncher();
+  }
+  function updateFolderParent(folderId, parentId){
+    const org = getOrg();
+    const f = (org.folders || []).find(x => x.id === folderId);
+    if(!f) return false;
+    if(parentId === folderId) return false;
+    if(parentId && isDescendantOf(parentId, folderId)) return false;
+    f.parentId = parentId;
+    setOrg(org); return true;
+  }
+  function isDescendantOf(a, b){
+    if(!a || a === b) return false;
+    const org = getOrg();
+    let cur = (org.folders || []).find(x => x.id === a);
+    let hops = 0;
+    while(cur && cur.parentId && hops < 50){ if(cur.parentId === b) return true; cur = (org.folders || []).find(x => x.id === cur.parentId); hops++; }
+    return false;
+  }
+  function getFolderPath(folderId){
+    const path = [{ id: null, name: 'Inicio' }];
+    if(!folderId) return path;
+    const org = getOrg();
+    const stack = [];
+    let cur = (org.folders || []).find(f => f.id === folderId);
+    let hops = 0;
+    while(cur && hops < 50){ stack.unshift({ id: cur.id, name: cur.name }); cur = cur.parentId ? (org.folders || []).find(f => f.id === cur.parentId) : null; hops++; }
+    return [...path, ...stack];
+  }
+  function updateAppPlacement(appId, { folderId, position }){
+    const org = getOrg();
+    org.placements = org.placements || {};
+    const cur = org.placements[appId] || { folderId: null, position: 0 };
+    if(folderId !== undefined) cur.folderId = folderId;
+    if(typeof position === 'number') cur.position = position;
+    org.placements[appId] = cur;
+    setOrg(org);
+  }
+
+  let _moveState = null;
+  function openMoveModal(){ if(!selectedItems.size) return; _moveState = { browseFolderId: currentFolderId }; renderMoveModal(); showModal('modal-move'); }
+  function checkMoveValid(targetId){
+    for(const [id, type] of selectedItems){ if(type === 'app') continue; if(type === 'folder'){ if(id === targetId) return false; if(targetId && isDescendantOf(targetId, id)) return false; } }
+    return true;
+  }
+  function renderMoveModal(){
+    const st = _moveState; if(!st) return;
+    const crumbs = document.getElementById('move-crumbs');
+    const list = document.getElementById('move-list');
+    const back = document.getElementById('move-back');
+    const path = getFolderPath(st.browseFolderId);
+    crumbs.innerHTML = path.map((seg, i) => i === path.length - 1 ? `<span class="m-current">${esc(seg.name)}</span>` : `${esc(seg.name)} <span style="color:var(--text-muted)">/</span> `).join('');
+    back.disabled = path.length <= 1;
+    back.onclick = ()=>{ if(path.length <= 1) return; st.browseFolderId = path[path.length - 2].id; renderMoveModal(); };
+    const org = getOrg();
+    const subfolders = (org.folders || []).filter(f => (f.parentId ?? null) === st.browseFolderId).sort((a, b) => (a.position || 0) - (b.position || 0));
+    const canMoveHere = checkMoveValid(st.browseFolderId);
+    let html = '';
+    if(canMoveHere){ const hereLabel = st.browseFolderId === null ? 'Inicio' : (org.folders.find(f => f.id === st.browseFolderId)?.name || 'Carpeta'); html += `<div class="move-row" data-move-here="1"><div class="mr-icon" style="color:var(--red);border-color:var(--red-dim);background:var(--accent-faint);"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div><div class="mr-meta"><div class="mr-name">Mover aquí</div><div class="mr-sub">${esc(hereLabel)}</div></div></div>`; }
+    if(!subfolders.length){ html += `<div class="move-empty">${canMoveHere ? 'No hay subcarpetas dentro.' : 'Destino no válido.'}</div>`; }
+    else { for(const f of subfolders){ html += `<div class="move-row" data-folder="${escAttr(f.id)}"><div class="mr-icon"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div><div class="mr-meta"><div class="mr-name">${esc(f.name)}</div><div class="mr-sub">Carpeta</div></div><svg class="mr-chev" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>`; } }
+    html += `<div class="move-new" id="move-new"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Nueva carpeta aquí</div>`;
+    list.innerHTML = html;
+    list.querySelectorAll('[data-move-here]').forEach(el=>{ el.addEventListener('click', ()=> applyMove(st.browseFolderId)); });
+    list.querySelectorAll('[data-folder]').forEach(el=>{ el.addEventListener('click', ()=>{ st.browseFolderId = el.dataset.folder; renderMoveModal(); }); });
+    document.getElementById('move-new')?.addEventListener('click', async ()=>{
+      const name = await showPrompt({ title:'Nueva carpeta', message:'Nombre:', input:{ value:'', placeholder:'Carpeta' }, confirmText:'Crear' });
+      if(name === null) return;
+      const newId = createFolder((name||'').trim() || 'Carpeta', st.browseFolderId);
+      st.browseFolderId = newId; renderMoveModal();
+    });
+  }
+  function applyMove(targetFolderId){
+    const org = getOrg();
+    for(const [id, type] of selectedItems){
+      if(type === 'app'){
+        if(!org.placements[id]) org.placements[id] = { folderId: null, position: 0 };
+        org.placements[id].folderId = targetFolderId;
+        const maxPos = Math.max(-1, ...Object.values(org.placements).filter(p => (p.folderId ?? null) === targetFolderId).map(p => p.position || 0));
+        org.placements[id].position = maxPos + 1;
+      } else if(type === 'folder'){
+        const f = org.folders.find(x => x.id === id);
+        if(f){ if(targetFolderId === id) continue; if(targetFolderId && isDescendantOf(targetFolderId, id)) continue; f.parentId = targetFolderId; const maxPos = Math.max(-1, ...org.folders.filter(x => (x.parentId ?? null) === targetFolderId).map(x => x.position || 0)); f.position = maxPos + 1; }
+      }
+    }
+    setOrg(org);
+    hideModal('modal-move');
+    selectedItems.clear();
+    haptic([10,20,10]);
+    toast('Movido');
+    renderLauncher(); renderEditBar();
+  }
+
+  async function navigateToFolder(folderId){
+    if(folderId === currentFolderId) return;
+    const grid = document.getElementById('apps-grid');
+    haptic(10);
+    grid.classList.add('view-leaving');
+    await new Promise(r => setTimeout(r, 170));
+    currentFolderId = folderId;
+    if(editMode){ editMode = false; document.body.classList.remove('edit-mode'); selectedItems.clear(); renderEditBar(); }
+    await renderLauncher();
+    grid.classList.remove('view-leaving');
+    grid.classList.add('view-entering');
+    void grid.offsetWidth;
+    grid.classList.remove('view-entering');
+  }
+  async function navigateHome(){ return navigateToFolder(null); }
+
+  async function launchAppWithAnimation(appId, iconEl){
+    let rect = null;
+    if(iconEl){ const box = iconEl.querySelector('.icon-box'); rect = box.getBoundingClientRect(); _lastLaunchedRect = rect; } else { _lastLaunchedRect = null; }
+    haptic(8);
+    const overlay = document.createElement('div'); overlay.className = 'launch-overlay';
+    overlay.style.transformOrigin = rect ? `${rect.left + rect.width/2}px ${rect.top + rect.height/2}px` : '50% 50%';
+    document.body.appendChild(overlay);
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    overlay.classList.add('active');
+    try {
+      await launchApp(appId, rect);
+      await new Promise(r => setTimeout(r, 420));
+      overlay.classList.add('fade-out');
+      setTimeout(()=> overlay.remove(), 320);
+    } catch(e){ overlay.classList.add('fade-out'); setTimeout(()=> overlay.remove(), 320); toast(e.message); }
+  }
+  async function closeAppWithAnimation(){
+    haptic(8);
+    const overlay = document.createElement('div'); overlay.className = 'launch-overlay';
+    overlay.style.transformOrigin = _lastLaunchedRect ? `${_lastLaunchedRect.left + _lastLaunchedRect.width/2}px ${_lastLaunchedRect.top + _lastLaunchedRect.height/2}px` : '50% 50%';
+    document.body.appendChild(overlay);
+    overlay.style.transition = 'none';
+    overlay.classList.add('active');
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    closeCurrentApp();
+    overlay.style.transition = '';
+    overlay.classList.remove('active');
+    setTimeout(()=> overlay.remove(), 500);
+  }
+
+  /* ───── 11. Theme editor v2 ───── */
+  const TE_STATE = {
+    accent: '#e63946',
+    base: 0,
+    overrides: {}, // { bg: '#...', bgCard: '#...' } etc — solo si están pisados
+    editingId: null, // id del tema guardado que estamos editando (null = nuevo)
+    bound: false
+  };
+
+  function teCurrentTokens(){
+    const generated = generatePalette(TE_STATE.accent, TE_STATE.base);
+    return { ...generated, ...TE_STATE.overrides, accent: TE_STATE.accent };
+  }
+
+  function teRefreshPreview(){
+    const tokens = teCurrentTokens();
+    const preview = document.getElementById('te-preview');
+    if(!preview) return;
+    const items = [
+      { key: 'bg', label: 'Fondo' },
+      { key: 'bgCard', label: 'Tarjeta' },
+      { key: 'border', label: 'Borde' },
+      { key: 'accent', label: 'Acento' }
+    ];
+    preview.innerHTML = items.map(it => `
+      <div class="te-token ${TE_STATE.overrides[it.key] ? 'has-override' : ''}" data-token="${it.key}">
+        <span class="te-token-swatch" style="background:${tokens[it.key]}"></span>
+        <span class="te-token-name">${it.label}</span>
+      </div>
+    `).join('');
+    preview.querySelectorAll('[data-token]').forEach(el=>{
+      el.addEventListener('click', ()=>{ teOpenTokenEditor(el.dataset.token); });
+    });
+    // Aplicar al vuelo
+    applyThemeTokens(tokens);
+    const hex = document.getElementById('accent-hex');
+    if(hex) hex.textContent = TE_STATE.accent;
+    const sw = document.getElementById('hex-swatch');
+    if(sw) sw.style.background = TE_STATE.accent;
+  }
+
+  function teOpenTokenEditor(tokenKey){
+    const tokens = teCurrentTokens();
+    const currentColor = tokens[tokenKey] || '#000000';
+    const hsv = hexToHsv(currentColor);
+    const state = { h: hsv.h, s: hsv.s, v: hsv.v, tokenKey, color: currentColor };
+
+    const bg = document.createElement('div'); bg.className = 'opts-sheet-backdrop';
+    const sheet = document.createElement('div'); sheet.className = 'opts-sheet';
+    sheet.innerHTML = `
+      <div class="opts-sheet-handle"></div>
+      <div class="mini-color-sheet">
+        <div class="wheel-wrap"><canvas id="mini-color-wheel" width="160" height="160"></canvas></div>
+        <div class="value-sliders">
+          <label>Brillo <input type="range" id="mini-color-value" min="15" max="100" value="${Math.round(state.v)}" /></label>
+          <label>Saturación <input type="range" id="mini-color-sat" min="0" max="100" value="${Math.round(state.s)}" /></label>
+        </div>
+        <div class="hex-row"><span class="hex-swatch" id="mini-hex-swatch" style="background:${currentColor}"></span><span id="mini-hex-label">${currentColor}</span></div>
+        <div class="te-actions" style="margin-top:14px;">
+          <button class="btn btn-secondary" id="mini-cancel">Cancelar</button>
+          <button class="btn btn-primary" id="mini-apply">Aplicar</button>
+        </div>
+        <button class="btn btn-danger" id="mini-clear" style="margin-top:8px;">Quitar override</button>
+      </div>
+    `;
+    document.body.appendChild(bg); document.body.appendChild(sheet);
+
+    const canvas = sheet.querySelector('#mini-color-wheel');
+    const swatch = sheet.querySelector('#mini-hex-swatch');
+    const label = sheet.querySelector('#mini-hex-label');
+    const vSlider = sheet.querySelector('#mini-color-value');
+    const sSlider = sheet.querySelector('#mini-color-sat');
+
+    const paint = ()=>{
+      drawColorWheel(canvas, state.v);
+      const c = hsvToHex(state.h, state.s, state.v);
+      state.color = c;
+      swatch.style.background = c;
+      label.textContent = c;
+    };
+    paint();
+
+    let dragging = false;
+    const pick = (cx, cy)=>{ const c = colorFromWheelEvent(canvas, cx, cy, state.v); if(!c) return; const h2 = hexToHsv(c); state.h = h2.h; state.s = h2.s; if(sSlider) sSlider.value = Math.round(h2.s); paint(); };
+    canvas.addEventListener('pointerdown', (e)=>{ dragging = true; canvas.setPointerCapture?.(e.pointerId); pick(e.clientX, e.clientY); });
+    canvas.addEventListener('pointermove', (e)=>{ if(dragging) pick(e.clientX, e.clientY); });
+    canvas.addEventListener('pointerup', ()=>{ dragging = false; });
+    canvas.addEventListener('pointercancel', ()=>{ dragging = false; });
+    vSlider.addEventListener('input', ()=>{ state.v = Number(vSlider.value); paint(); });
+    sSlider.addEventListener('input', ()=>{ state.s = Number(sSlider.value); paint(); });
+
+    const close = ()=>{ bg.style.transition='opacity 0.18s'; sheet.style.transition='transform 0.24s cubic-bezier(0.32,0.72,0,1)'; bg.style.opacity='0'; sheet.style.transform='translateY(100%)'; setTimeout(()=>{bg.remove(); sheet.remove();}, 240); };
+    bg.addEventListener('click', close);
+    sheet.querySelector('#mini-cancel').addEventListener('click', close);
+    sheet.querySelector('#mini-apply').addEventListener('click', ()=>{ TE_STATE.overrides[state.tokenKey] = state.color; teRefreshPreview(); close(); });
+    sheet.querySelector('#mini-clear').addEventListener('click', ()=>{ delete TE_STATE.overrides[state.tokenKey]; teRefreshPreview(); close(); });
+  }
+
+  function teBindOnce(){
+    if(TE_STATE.bound) return;
+    TE_STATE.bound = true;
+    const canvas = document.getElementById('color-wheel');
+    const vSlider = document.getElementById('color-value');
+    const sSlider = document.getElementById('color-sat');
+    const baseSlider = document.getElementById('base-slider');
+    if(!canvas) return;
+    let dragging = false;
+    const pick = (cx, cy)=>{ const c = colorFromWheelEvent(canvas, cx, cy, TE_STATE.v ?? 55); if(!c) return; const h2 = hexToHsv(c); TE_STATE.h = h2.h; TE_STATE.s = h2.s; TE_STATE.accent = hsvToHex(TE_STATE.h, TE_STATE.s, TE_STATE.v ?? 55); if(sSlider) sSlider.value = Math.round(h2.s); teRedrawWheel(); teRefreshPreview(); };
+    canvas.addEventListener('pointerdown', (e)=>{ dragging = true; canvas.setPointerCapture?.(e.pointerId); pick(e.clientX, e.clientY); });
+    canvas.addEventListener('pointermove', (e)=>{ if(dragging) pick(e.clientX, e.clientY); });
+    canvas.addEventListener('pointerup', ()=>{ dragging = false; });
+    canvas.addEventListener('pointercancel', ()=>{ dragging = false; });
+    if(vSlider) vSlider.addEventListener('input', ()=>{ TE_STATE.v = Number(vSlider.value); TE_STATE.accent = hsvToHex(TE_STATE.h || 0, TE_STATE.s || 85, TE_STATE.v); teRedrawWheel(); teRefreshPreview(); });
+    if(sSlider) sSlider.addEventListener('input', ()=>{ TE_STATE.s = Number(sSlider.value); TE_STATE.accent = hsvToHex(TE_STATE.h || 0, TE_STATE.s, TE_STATE.v ?? 55); teRedrawWheel(); teRefreshPreview(); });
+    if(baseSlider) baseSlider.addEventListener('input', ()=>{ TE_STATE.base = Number(baseSlider.value); teRefreshPreview(); });
+    document.getElementById('te-reset')?.addEventListener('click', ()=>{
+      const prefs = getPrefs();
+      TE_STATE.accent = prefs.accent || '#e63946';
+      TE_STATE.base = 0;
+      TE_STATE.overrides = {};
+      const hsv = hexToHsv(TE_STATE.accent);
+      TE_STATE.h = hsv.h; TE_STATE.s = hsv.s; TE_STATE.v = hsv.v;
+      if(vSlider) vSlider.value = Math.round(hsv.v);
+      if(sSlider) sSlider.value = Math.round(hsv.s);
+      if(baseSlider) baseSlider.value = 0;
+      teRedrawWheel(); teRefreshPreview(); toast('Restablecido');
+    });
+    document.getElementById('te-save')?.addEventListener('click', async ()=>{
+      const tokens = teCurrentTokens();
+      const name = await showPrompt({ title:'Guardar tema', message:'Nombre del tema:', input:{ value:'Mi tema', placeholder:'Mi tema' }, confirmText:'Guardar' });
+      if(name === null) return;
+      const trimmed = (name||'').trim() || 'Tema';
+      const id = TE_STATE.editingId || ('t' + Date.now().toString(36));
+      const prefs = getPrefs();
+      prefs.customThemes = prefs.customThemes || {};
+      prefs.customThemes[id] = { name: trimmed, accent: TE_STATE.accent, base: TE_STATE.base, overrides: { ...TE_STATE.overrides }, tokens };
+      prefs.activeCustomThemeId = id;
+      prefs.theme = 'custom';
+      localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+      applyPrefs(prefs);
+      TE_STATE.editingId = id;
+      document.getElementById('te-title').textContent = 'Editando: ' + trimmed;
+      document.getElementById('te-status').textContent = 'Guardado';
+      toast('Tema guardado');
+      renderSettingsUI();
+      renderLauncher();
+    });
+    document.getElementById('te-close')?.addEventListener('click', ()=>{
+      hideModal('modal-theme-editor');
+      const prefs = getPrefs();
+      if(!prefs.activeCustomThemeId && Object.keys(TE_STATE.overrides).length === 0){
+        // Si no guardó nada, no dejamos 'custom' activo sin tema
+        if(prefs.theme === 'custom' && !prefs.activeCustomThemeId){
+          setPrefs({ theme: 'carbon-red' });
+          renderSettingsUI();
+        }
+      }
+    });
+  }
+
+  function teRedrawWheel(){
+    const canvas = document.getElementById('color-wheel');
+    if(!canvas) return;
+    const v = TE_STATE.v ?? 55;
+    drawColorWheel(canvas, v);
+    const preview = document.getElementById('wheel-preview');
+    const color = hsvToHex(TE_STATE.h || 0, TE_STATE.s ?? 85, v);
+    if(preview) preview.style.background = color;
+  }
+
+  function openThemeEditor(themeId = null){
+    const prefs = getPrefs();
+    let theme = null;
+    if(themeId && prefs.customThemes[themeId]){ theme = prefs.customThemes[themeId]; TE_STATE.editingId = themeId; }
+    else if(prefs.activeCustomThemeId && prefs.customThemes[prefs.activeCustomThemeId]){ theme = prefs.customThemes[prefs.activeCustomThemeId]; TE_STATE.editingId = prefs.activeCustomThemeId; }
+    else { TE_STATE.editingId = null; }
+
+    if(theme){
+      TE_STATE.accent = theme.accent;
+      TE_STATE.base = theme.base ?? 0;
+      TE_STATE.overrides = { ...(theme.overrides || {}) };
+      document.getElementById('te-title').textContent = 'Editando: ' + theme.name;
+      document.getElementById('te-status').textContent = 'Guardado';
+    } else {
+      TE_STATE.accent = prefs.accent || '#e63946';
+      TE_STATE.base = 0;
+      TE_STATE.overrides = {};
+      document.getElementById('te-title').textContent = 'Editor de tema';
+      document.getElementById('te-status').textContent = 'Sin guardar';
+    }
+    const hsv = hexToHsv(TE_STATE.accent);
+    TE_STATE.h = hsv.h; TE_STATE.s = hsv.s; TE_STATE.v = hsv.v;
+    const vSlider = document.getElementById('color-value');
+    const sSlider = document.getElementById('color-sat');
+    const bSlider = document.getElementById('base-slider');
+    if(vSlider) vSlider.value = Math.round(hsv.v);
+    if(sSlider) sSlider.value = Math.round(hsv.s);
+    if(bSlider) bSlider.value = TE_STATE.base;
+    teBindOnce();
+    teRedrawWheel();
+    teRefreshPreview();
+    showModal('modal-theme-editor');
+  }
+
+  /* ───── 12. File manager ───── */
+  async function renderFileManager(container, state = { scope:'shared', appId:null, pathPrefix:'' }){
+    if(!container) return state;
+    const apps = await getAllApps();
+    apps.sort((a,b)=>(a.displayName||a.name||'').localeCompare(b.displayName||b.name||''));
+    let allFiles = [];
+    if(state.scope === 'shared') allFiles = await listSharedFiles();
+    else if(state.appId) allFiles = await listAppFiles(state.appId);
+    const prefix = (state.pathPrefix||'').replace(/^\/+|\/+$/g,'');
+    const { folders, files } = splitDir(allFiles, prefix);
+    const currentLabel = state.scope === 'shared' ? 'Global / compartidos' : 'App: ' + (apps.find(a=>a.id===state.appId)?.displayName || apps.find(a=>a.id===state.appId)?.name || '');
+    const crumbs = buildCrumbs(prefix);
+    container.innerHTML = `
+      <div class="fm-toolbar">
+        <button type="button" class="select-btn" id="fm-scope-btn">
+          <span>${esc(currentLabel)}</span>
+          <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+      </div>
+      <div class="fm-crumbs" id="fm-crumbs">${crumbs}</div>
+      <div class="fm-actions-bar">
+        <button type="button" class="btn btn-secondary fm-btn" id="fm-import">Importar aquí</button>
+        <button type="button" class="btn btn-secondary fm-btn" id="fm-mkdir">Nueva carpeta</button>
+      </div>
+      <input type="file" id="fm-import-input" multiple style="display:none" />
+      <div class="fm-list" id="fm-list">
+        ${prefix?`<div class="fm-row fm-folder" data-nav=".."><div class="fm-ico">${iconFolder()}</div><div class="fm-meta"><div class="fm-name">..</div><div class="fm-sub">Subir</div></div></div>`:''}
+        ${folders.length + files.length === 0 ? `<p class="fm-empty">Carpeta vacía</p>` : ''}
+        ${folders.map(name=>`<div class="fm-row fm-folder" data-folder="${escAttr(name)}"><div class="fm-ico">${iconFolder()}</div><div class="fm-meta"><div class="fm-name">${esc(name)}</div><div class="fm-sub">Carpeta</div></div><button type="button" class="fm-ico-btn" data-menu="folder" data-name="${escAttr(name)}" aria-label="Opciones">${iconMore()}</button></div>`).join('')}
+        ${files.map(f=>`<div class="fm-row fm-file" data-path="${escAttr(f.fullPath)}"><div class="fm-ico">${iconFile()}</div><div class="fm-meta"><div class="fm-name">${esc(f.name)}</div><div class="fm-sub">${formatBytes(f.size||0)}</div></div><button type="button" class="fm-ico-btn" data-menu="file" data-path="${escAttr(f.fullPath)}" aria-label="Opciones">${iconMore()}</button></div>`).join('')}
+      </div>
+      <div class="fm-sheet" id="fm-sheet" style="display:none;"></div>
+    `;
+    container.querySelector('#fm-scope-btn')?.addEventListener('click', ()=>{
+      const options = [ { value: 'shared', label: 'Global / compartidos' }, ...apps.map(a => ({ value: 'app:' + a.id, label: 'App: ' + (a.displayName || a.name) })) ];
+      const current = state.scope === 'shared' ? 'shared' : ('app:' + state.appId);
+      openOptionsSheet({ title: 'Origen', options, selected: current, onPick: async (v)=>{
+        if(v === 'shared') state = { scope:'shared', appId:null, pathPrefix:'' };
+        else state = { scope:'app', appId: v.slice(4), pathPrefix:'' };
+        await renderFileManager(container, state);
+      }});
+    });
+    container.querySelectorAll('[data-crumb]').forEach(el=>{ el.addEventListener('click', async ()=>{ state.pathPrefix = el.dataset.crumb||''; await renderFileManager(container, state); }); });
+    container.querySelectorAll('.fm-folder').forEach(row=>{
+      row.addEventListener('click', async (e)=>{
+        if(e.target.closest('[data-menu]')) return;
+        if(row.dataset.nav === '..'){ const parts = prefix.split('/').filter(Boolean); parts.pop(); state.pathPrefix = parts.join('/'); }
+        else if(row.dataset.folder){ state.pathPrefix = prefix ? prefix + '/' + row.dataset.folder : row.dataset.folder; }
+        await renderFileManager(container, state);
+      });
+      bindLongPress(row, ()=>{ const name = row.dataset.folder; if(name) showFmSheet(container, state, { kind:'folder', name }); });
+    });
+    container.querySelectorAll('.fm-file').forEach(row=>{ bindLongPress(row, ()=> showFmSheet(container, state, { kind:'file', path: row.dataset.path })); });
+    container.querySelectorAll('[data-menu]').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        if(btn.dataset.menu === 'folder') showFmSheet(container, state, { kind:'folder', name: btn.dataset.name });
+        else showFmSheet(container, state, { kind:'file', path: btn.dataset.path });
+      });
+    });
+    container.querySelector('#fm-import')?.addEventListener('click', ()=> container.querySelector('#fm-import-input')?.click());
+    container.querySelector('#fm-import-input')?.addEventListener('change', async (e)=>{
+      const list = e.target.files; if(!list?.length) return;
+      for(const file of list){
+        const dest = prefix ? prefix + '/' + file.name : file.name;
+        try { if(state.scope === 'shared') await putSharedFile(dest, file, file.type || getMime(file.name)); else if(state.appId) await putFile(state.appId, dest, file, file.type || getMime(file.name)); }
+        catch(err){ if(err?.name === 'QuotaExceededError') toast('Sin espacio de almacenamiento'); else toast(err.message||'Error al importar'); }
+      }
+      toast('Importado'); e.target.value = '';
+      await renderFileManager(container, state);
+    });
+    container.querySelector('#fm-mkdir')?.addEventListener('click', async ()=>{
+      const name = await showPrompt({ title:'Nueva carpeta', message:'Nombre de la carpeta:', input:{ value:'', placeholder:'Mi carpeta' }, confirmText:'Crear' });
+      if(!name || !name.trim()) return;
+      const safe = name.trim().replace(/[\/\\]/g,'-');
+      const keepPath = prefix ? prefix + '/' + safe + '/.keep' : safe + '/.keep';
+      const blob = new Blob([''], { type:'text/plain' });
+      try { if(state.scope === 'shared') await putSharedFile(keepPath, blob, 'text/plain'); else if(state.appId) await putFile(state.appId, keepPath, blob, 'text/plain'); else { toast('Elige un espacio primero'); return; } toast('Carpeta creada'); await renderFileManager(container, state); }
+      catch(err){ toast(err.message); }
+    });
+    return state;
+  }
+  function splitDir(allFiles, prefix){
+    const folderSet = new Set(); const files = [];
+    const pre = prefix ? prefix + '/' : '';
+    for(const f of allFiles){
+      const path = f.path.replace(/^\/+/,'');
+      if(pre && !path.startsWith(pre)) continue;
+      const rest = pre ? path.slice(pre.length) : path;
+      if(!rest) continue;
+      const slash = rest.indexOf('/');
+      if(slash === -1){ if(rest === '.keep') continue; files.push({ name:rest, fullPath:path, size:f.size, mime:f.mime }); }
+      else folderSet.add(rest.slice(0, slash));
+    }
+    return { folders: [...folderSet].sort(), files: files.sort((a,b)=>a.name.localeCompare(b.name)) };
+  }
+  function buildCrumbs(prefix){
+    const parts = (prefix||'').split('/').filter(Boolean);
+    let acc = '';
+    let html = `<button type="button" class="fm-crumb" data-crumb="">Raíz</button>`;
+    for(const p of parts){ acc = acc ? acc + '/' + p : p; html += `<span class="fm-crumb-sep">/</span><button type="button" class="fm-crumb" data-crumb="${escAttr(acc)}">${esc(p)}</button>`; }
+    return html;
+  }
+  function showFmSheet(container, state, target){
+    const sheet = container.querySelector('#fm-sheet'); if(!sheet) return;
+    const title = target.kind === 'folder' ? target.name : (target.path||'').split('/').pop();
+    sheet.style.display = 'block';
+    sheet.innerHTML = `<div class="fm-sheet-backdrop" id="fm-sheet-bg"></div><div class="fm-sheet-panel"><div class="fm-sheet-title">${esc(title)}</div><button type="button" class="fm-sheet-btn" data-act="export">Exportar</button>${target.kind === 'file' ? '<button type="button" class="fm-sheet-btn" data-act="move">Mover…</button>' : ''}<button type="button" class="fm-sheet-btn danger" data-act="delete">Eliminar</button><button type="button" class="fm-sheet-btn" data-act="cancel">Cancelar</button></div>`;
+    const close = ()=>{ sheet.style.display='none'; sheet.innerHTML=''; };
+    sheet.querySelector('#fm-sheet-bg')?.addEventListener('click', close);
+    sheet.querySelectorAll('[data-act]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const act = btn.dataset.act;
+        if(act === 'cancel') return close();
+        if(act === 'export'){
+          try {
+            if(target.kind === 'file') await exportOne(state, target.path);
+            else {
+              const all = state.scope === 'shared' ? await listSharedFiles() : await listAppFiles(state.appId);
+              const pre = (state.pathPrefix ? state.pathPrefix + '/' : '') + target.name + '/';
+              const matches = all.filter(f=>f.path.startsWith(pre) || f.path === pre.slice(0,-1));
+              if(!matches.length){ toast('Carpeta vacía'); return close(); }
+              for(const f of matches) await exportOne(state, f.path);
+              toast('Exportados '+matches.length);
+            }
+          } catch(e){ toast(e.message); }
+          return close();
+        }
+        if(act === 'delete'){
+          const ok = await showConfirm({ title:'Eliminar', message: target.kind === 'folder' ? '¿Eliminar esta carpeta y su contenido?' : '¿Eliminar este archivo?', confirmText:'Eliminar' });
+          if(!ok) return;
+          try {
+            if(target.kind === 'file'){ if(state.scope === 'shared') await deleteSharedFile(target.path); else await deleteFile(state.appId, target.path); }
+            else {
+              const all = state.scope === 'shared' ? await listSharedFiles() : await listAppFiles(state.appId);
+              const pre = (state.pathPrefix ? state.pathPrefix + '/' : '') + target.name + '/';
+              for(const f of all){ if(f.path.startsWith(pre) || f.path === pre.slice(0,-1)){ if(state.scope === 'shared') await deleteSharedFile(f.path); else await deleteFile(state.appId, f.path); } }
+            }
+            toast('Eliminado'); close();
+            await renderFileManager(container, state);
+          } catch(e){ toast(e.message); }
+          return;
+        }
+        if(act === 'move' && target.kind === 'file'){
+          const dest = await showPrompt({ title:'Mover archivo', message:'Nueva ruta completa:', input:{ value: target.path }, confirmText:'Mover' });
+          if(!dest || dest === target.path) return close();
+          try {
+            let rec;
+            if(state.scope === 'shared'){ rec = await getSharedFile(target.path); if(!rec) throw new Error('No encontrado'); await putSharedFile(dest, rec.blob, rec.mime); await deleteSharedFile(target.path); }
+            else { rec = await getFile(state.appId, target.path); if(!rec) throw new Error('No encontrado'); await putFile(state.appId, dest, rec.blob, rec.mime); await deleteFile(state.appId, target.path); }
+            toast('Movido'); close();
+            await renderFileManager(container, state);
+          } catch(e){ toast(e.message); }
+        }
+      });
+    });
+  }
+  async function exportOne(state, path){
+    let rec;
+    if(state.scope === 'shared') rec = await getSharedFile(path); else rec = await getFile(state.appId, path);
+    if(!rec?.blob) throw new Error('No encontrado: ' + path);
+    const url = URL.createObjectURL(rec.blob);
+    const a = document.createElement('a'); a.href = url; a.download = path.split('/').pop() || 'file'; a.click();
+    setTimeout(()=>URL.revokeObjectURL(url), 1500);
+  }
+  function iconFolder(){ return `<svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" stroke="currentColor" fill="none" stroke-width="1.6"/></svg>`; }
+  function iconFile(){ return `<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" fill="none" stroke-width="1.6"/><polyline points="14 2 14 8 20 8" stroke="currentColor" fill="none" stroke-width="1.6"/></svg>`; }
+  function iconMore(){ return `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1" stroke="currentColor" fill="currentColor"/></svg>`; }
+  function bindLongPress(el, fn){
+    let t;
+    el.addEventListener('touchstart', ()=>{ t = setTimeout(fn, 480); }, {passive:true});
+    el.addEventListener('touchend', ()=> clearTimeout(t));
+    el.addEventListener('touchmove', ()=> clearTimeout(t));
+    el.addEventListener('contextmenu', (e)=>{ e.preventDefault(); fn(); });
+  }
+
+  /* ───── 13. App manager ───── */
+  async function renderAppManager(){
+    const list = document.getElementById('manager-list'); if(!list) return;
+    const apps = await getAllApps();
+    apps.sort((a,b)=>(b.installedAt||0) - (a.installedAt||0));
+    if(apps.length === 0){ list.innerHTML = `<p style="color:var(--text-muted);text-align:center;padding:24px 0;font-size:13px;">No hay aplicaciones instaladas</p>`; return; }
+    const parts = [];
+    for(const app of apps){
+      let iconInner = DEFAULT_SVG;
+      const iconPath = app.customIconPath || app.iconPath;
+      if(iconPath){ try { const file = await getFile(app.id, iconPath); if(file?.blob){ const url = URL.createObjectURL(file.blob); iconInner = `<img src="${url}" alt="" />`; } } catch(e){} }
+      parts.push(`<div class="mgr-item" data-id="${app.id}"><div class="mgr-icon">${iconInner}</div><div class="mgr-meta"><div class="mgr-name">${esc(app.displayName||app.name)}</div><div class="mgr-sub">${formatBytes(app.size||0)} · ${app.fileCount||0} archivos · v${app.version||'1.0'}</div></div><button class="mgr-del" data-action="delete" data-id="${app.id}" aria-label="Desinstalar"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></div>`);
+    }
+    list.innerHTML = parts.join('');
+    list.querySelectorAll('[data-action="delete"]').forEach(btn=>{
+      btn.addEventListener('click', async (e)=>{
+        if(e && e.isTrusted === false) return;
+        const id = btn.dataset.id;
+        const ok = await showConfirm({ title:'Desinstalar', message:'Se borrarán archivos, IndexedDB, cachés y localStorage de esta app.', confirmText:'Desinstalar' });
+        if(ok){ try { await uninstallApp(id); renderAppManager(); } catch(e){ toast(e.message); } }
+      });
+    });
+  }
+
+  /* ───── 14. Permisos ───── */
+  const PERM_SVG = {
+    camera:'<svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>',
+    microphone:'<svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>',
+    geolocation:'<svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>',
+    notifications:'<svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>',
+    vibration:'<svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>',
+    clipboard:'<svg viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>',
+    share:'<svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>',
+    wakelock:'<svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
+    fullscreen:'<svg viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>',
+    orientation:'<svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>'
+  };
+  async function renderPrivacy(){
+    const container = document.getElementById('privacy-list'); if(!container) return;
+    const apps = await getAllApps();
+    const rows = [];
+    for(const p of SYSTEM_PERMISSIONS){
+      let count = 0;
+      for(const app of apps){ const perms = await getAppPermissions(app.id); if(perms[p.id]) count++; }
+      rows.push(`<div class="perm-item clickable" data-perm="${p.id}"><div class="info"><span class="p-icon">${PERM_SVG[p.id]||''}</span><div><div class="p-name">${p.name}</div><div class="p-desc">${count} app${count===1?'':'s'} con acceso</div></div></div><svg class="pi-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>`);
+    }
+    container.innerHTML = rows.join('');
+    container.querySelectorAll('[data-perm]').forEach(row=>{
+      row.addEventListener('click', async ()=>{
+        const pid = row.dataset.perm;
+        const perm = SYSTEM_PERMISSIONS.find(x=>x.id===pid);
+        await renderPrivacyDetail(pid, perm);
+        hideModal('modal-privacy');
+        showModal('modal-privacy-detail');
+      });
+    });
+  }
+  async function renderPrivacyDetail(permId, permDef){
+    const title = document.getElementById('privacy-detail-title');
+    const sub = document.getElementById('privacy-detail-sub');
+    const list = document.getElementById('privacy-detail-list');
+    title.textContent = permDef.name;
+    sub.textContent = `Apps con acceso a ${permDef.name.toLowerCase()}`;
+    const apps = await getAllApps();
+    if(!apps.length){ list.innerHTML = `<p style="color:var(--text-muted);text-align:center;padding:20px 0;font-size:13px;">No hay apps instaladas</p>`; return; }
+    const rows = [];
+    for(const app of apps){
+      const perms = await getAppPermissions(app.id);
+      const on = !!perms[permId];
+      let iconInner = `<svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>`;
+      const iconPath = app.customIconPath || app.iconPath;
+      if(iconPath){ try { const f = await getFile(app.id, iconPath); if(f?.blob){ const url = URL.createObjectURL(f.blob); iconInner = `<img src="${url}" alt="" />`; } } catch(e){} }
+      rows.push(`<div class="mgr-item"><div class="mgr-icon">${iconInner}</div><div class="mgr-meta"><div class="mgr-name">${esc(app.displayName||app.name)}</div></div><div class="toggle ${on?'on':''}" data-app="${app.id}" data-perm="${permId}"></div></div>`);
+    }
+    list.innerHTML = rows.join('');
+    list.querySelectorAll('.toggle[data-app]').forEach(toggle=>{
+      toggle.addEventListener('click', async ()=>{
+        const aid = toggle.dataset.app, pid = toggle.dataset.perm;
+        const current = await getAppPermissions(aid);
+        current[pid] = !current[pid];
+        await setAppPermissions(aid, current);
+        toggle.classList.toggle('on', current[pid]);
+        haptic(8);
+      });
+    });
+  }
+  async function renderAppPermissions(appId){
+    const app = await getApp(appId);
+    const perms = await getAppPermissions(appId);
+    const container = document.getElementById('detail-content');
+    if(!container || !app) return;
+    let iconHtml = `<svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>`;
+    const iconPath = app.customIconPath || app.iconPath;
+    if(iconPath){ try { const file = await getFile(appId, iconPath); if(file?.blob){ const url = URL.createObjectURL(file.blob); iconHtml = `<img src="${url}" alt="" />`; } } catch(e){} }
+    const dbCount = (await listMiniAppDBs(appId)).length;
+    const cacheCount = (await listMiniAppCaches(appId)).length;
+    const lsCount = listMiniAppLSKeys(appId).length;
+    const extras = [];
+    if(dbCount) extras.push(`${dbCount} BD`);
+    if(cacheCount) extras.push(`${cacheCount} caché${cacheCount>1?'s':''}`);
+    if(lsCount) extras.push(`${lsCount} clave${lsCount>1?'s':''} local`);
+    const extrasTxt = extras.length ? extras.join(' · ') : 'sin datos guardados';
+    let html = `<div class="icon-preview-row"><div class="preview-box">${iconHtml}</div><div><div style="font-weight:600;font-size:14px;">${esc(app.name)}</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${formatBytes(app.size||0)} · ${app.fileCount||0} archivos</div><div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Datos de la app: ${esc(extrasTxt)}</div></div></div><div class="section-label" style="margin-bottom:8px;">Permisos de esta app</div>`;
+    const requested = app.permissions || Object.keys(perms);
+    const list = SYSTEM_PERMISSIONS.filter(p=> requested.includes(p.id) || perms[p.id] !== undefined);
+    const finalList = list.length ? list : SYSTEM_PERMISSIONS;
+    html += finalList.map(p=>{ const on = !!perms[p.id]; return `<div class="perm-item"><div class="info"><span class="p-icon">${PERM_SVG[p.id]||''}</span><div class="p-name">${p.name}</div></div><div class="toggle ${on?'on':''}" data-app="${appId}" data-perm="${p.id}"></div></div>`; }).join('');
+    container.innerHTML = html;
+    container.querySelectorAll('.toggle[data-app]').forEach(toggle=>{
+      toggle.addEventListener('click', async ()=>{
+        const aid = toggle.dataset.app, perm = toggle.dataset.perm;
+        const current = await getAppPermissions(aid);
+        current[perm] = !current[perm];
+        await setAppPermissions(aid, current);
+        toggle.classList.toggle('on', current[perm]);
+        haptic(8);
+      });
+    });
+  }
+
+  /* ───── 15. Settings UI ───── */
+  function renderSettingsUI(){
+    const prefs = getPrefs();
+    const themes = getThemes();
+    const grid = document.getElementById('theme-grid');
+    if(grid){
+      const builtin = ['carbon-red','carbon-gold','midnight','slate'].map(id=>{
+        const t = themes[id];
+        const active = prefs.theme === id ? 'active' : '';
+        const dots = [t.bg, t.bgCard, t.accent].map(c=>`<i style="background:${c}"></i>`).join('');
+        return `<div class="theme-row ${active}" data-theme="${id}"><div class="dots">${dots}</div><div class="t-meta"><div class="t-name">${t.name}</div><div class="t-sub">${t.sub}</div></div><div class="check"></div></div>`;
+      }).join('');
+      const customEntries = Object.entries(prefs.customThemes || {}).map(([id, th])=>{
+        const active = prefs.theme === 'custom' && prefs.activeCustomThemeId === id ? 'active' : '';
+        const tokens = th.tokens || generatePalette(th.accent, th.base ?? 0);
+        const dots = [tokens.bg, tokens.bgCard, th.accent].map(c=>`<i style="background:${c}"></i>`).join('');
+        return `<div class="theme-row ${active}" data-theme="custom:${escAttr(id)}"><div class="dots">${dots}</div><div class="t-meta"><div class="t-name">${esc(th.name)}</div><div class="t-sub">Personalizado</div></div><button class="t-del" data-del="${escAttr(id)}" aria-label="Eliminar"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button><div class="check"></div></div>`;
+      }).join('');
+      grid.innerHTML = builtin + customEntries;
+      grid.querySelectorAll('.theme-row').forEach(row=>{
+        row.addEventListener('click', (e)=>{
+          if(e.target.closest('[data-del]')) return;
+          haptic(8);
+          const v = row.dataset.theme;
+          if(v.startsWith('custom:')){
+            const id = v.slice(7);
+            setPrefs({ theme: 'custom', activeCustomThemeId: id });
+          } else {
+            setPrefs({ theme: v });
+          }
+          renderSettingsUI();
+        });
+      });
+      grid.querySelectorAll('[data-del]').forEach(btn=>{
+        btn.addEventListener('click', async (e)=>{
+          e.stopPropagation();
+          const id = btn.dataset.del;
+          const th = prefs.customThemes[id];
+          const ok = await showConfirm({ title:'Eliminar tema', message:`¿Eliminar "${th.name}"?`, confirmText:'Eliminar' });
+          if(!ok) return;
+          const next = { ...prefs.customThemes };
+          delete next[id];
+          const patch = { customThemes: next };
+          if(prefs.activeCustomThemeId === id){ patch.activeCustomThemeId = null; patch.theme = 'carbon-red'; }
+          setPrefs(patch);
+          renderSettingsUI();
+          toast('Tema eliminado');
+        });
+      });
+    }
+    const btnEdit = document.getElementById('btn-edit-theme');
+    if(btnEdit) btnEdit.textContent = 'Crear / editar tema personalizado';
+
+    const wpInput = document.getElementById('wallpaper-input');
+    const btnWp = document.getElementById('btn-wallpaper');
+    if(btnWp) btnWp.onclick = ()=> wpInput?.click();
+    if(wpInput){ wpInput.onchange = async (e)=>{ const f = e.target.files?.[0]; if(!f) return; try { await setWallpaperFromFile(f); toast('Fondo actualizado'); } catch(err){ toast(err.message); } wpInput.value = ''; }; }
+    const btnClear = document.getElementById('btn-wallpaper-clear');
+    if(btnClear) btnClear.onclick = ()=>{ setPrefs({ wallpaper:null }); toast('Fondo eliminado'); };
+    const dim = document.getElementById('wallpaper-dim');
+    if(dim){ dim.value = Math.round((prefs.wallpaperDim ?? 0.45) * 100); dim.oninput = ()=> setPrefs({ wallpaperDim: Number(dim.value)/100 }); }
+    const seg = document.getElementById('icon-size-seg');
+    if(seg){ seg.querySelectorAll('button').forEach(b=>{ b.classList.toggle('active', b.dataset.size === (prefs.iconSize||'normal')); b.onclick = ()=>{ haptic(8); setPrefs({ iconSize: b.dataset.size }); renderSettingsUI(); renderLauncher(); }; }); }
+    const nameToggle = document.getElementById('toggle-show-names');
+    if(nameToggle){ nameToggle.classList.toggle('on', prefs.showNames !== false); nameToggle.onclick = ()=>{ haptic(8); const next = !(getPrefs().showNames !== false); setPrefs({ showNames: next }); nameToggle.classList.toggle('on', next); renderLauncher(); }; }
+    const safeToggle = document.getElementById('toggle-safe-margins');
+    if(safeToggle){ safeToggle.classList.toggle('on', prefs.safeMargins !== false); safeToggle.onclick = ()=>{ haptic(8); const next = !(getPrefs().safeMargins !== false); setPrefs({ safeMargins: next }); safeToggle.classList.toggle('on', next); }; }
+    const modeSeg = document.getElementById('default-display-mode');
+    if(modeSeg){ const cur = prefs.defaultDisplayMode || 'off'; modeSeg.querySelectorAll('button').forEach(b=>{ b.classList.toggle('active', b.dataset.mode === cur); b.onclick = ()=>{ haptic(8); setPrefs({ defaultDisplayMode: b.dataset.mode }); renderSettingsUI(); }; }); }
+  }
+
+  /* ───── 16. Panel / storage modal ───── */
+  function openPanel(){ haptic(8); document.getElementById('panel-backdrop').classList.add('active'); document.getElementById('panel').classList.add('active'); refreshPanelSummaries(); }
+  function closePanel(){ document.getElementById('panel-backdrop').classList.remove('active'); document.getElementById('panel').classList.remove('active'); }
+  async function refreshPanelSummaries(){
+    try {
+      const apps = await getAllApps();
+      const usage = await getStorageUsage();
+      const a = document.getElementById('pi-apps-sub'); const s = document.getElementById('pi-storage-sub');
+      if(a) a.textContent = `${apps.length} instalada${apps.length===1?'':'s'}`;
+      if(s) s.textContent = formatBytes(usage.total);
+    } catch(e){}
+  }
+  async function renderStorageModal(){
+    const total = document.getElementById('storage-total');
+    const details = document.getElementById('storage-details');
+    const usage = await getStorageUsage();
+    const extras = await countAllMiniAppStorage();
+    if(total) total.textContent = formatBytes(usage.total);
+    if(details){
+      details.innerHTML = `
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-subtle);"><span>Apps instaladas</span><span style="color:var(--text);font-weight:600;">${usage.apps}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-subtle);"><span>Archivos compartidos</span><span style="color:var(--text);font-weight:600;">${formatBytes(usage.sharedSize)}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;"><span>Datos de mini-apps</span><span style="color:var(--text);font-weight:600;">${extras.text}</span></div>
+      `;
+    }
+  }
+
+  /* ───── 17. Modales genéricos ───── */
+  const showModal = (id)=>{ document.getElementById(id)?.classList.add('active'); };
+  const hideModal = (id)=>{ document.getElementById(id)?.classList.remove('active'); };
+  const hideAllModals = ()=>{ document.querySelectorAll('.modal-overlay.active').forEach(m=>m.classList.remove('active')); };
+
+  /* ───── 18. Setup UI ───── */
+  function setupUI(){
+    document.getElementById('panel-btn')?.addEventListener('click', openPanel);
+    document.getElementById('panel-close')?.addEventListener('click', closePanel);
+    document.getElementById('panel-backdrop')?.addEventListener('click', closePanel);
+    document.getElementById('panel')?.addEventListener('click', (e)=> e.stopPropagation());
+
+    document.getElementById('pi-install')?.addEventListener('click', ()=>{ closePanel(); openInstallModal(); });
+    document.getElementById('pi-files')?.addEventListener('click', async ()=>{ closePanel(); await openFilesModal(); });
+    document.getElementById('pi-organize')?.addEventListener('click', ()=>{ closePanel(); setEditMode(true); toast('Toca apps para organizar'); });
+    document.getElementById('pi-apps')?.addEventListener('click', async ()=>{ closePanel(); await renderAppManager(); showModal('modal-manager'); });
+    document.getElementById('pi-storage')?.addEventListener('click', async ()=>{ closePanel(); await renderStorageModal(); showModal('modal-storage'); });
+    document.getElementById('pi-privacy')?.addEventListener('click', async ()=>{ closePanel(); await renderPrivacy(); showModal('modal-privacy'); });
+    document.getElementById('pi-settings')?.addEventListener('click', ()=>{ closePanel(); renderSettingsUI(); showModal('modal-settings'); });
+    document.getElementById('pi-about')?.addEventListener('click', async ()=>{ closePanel(); await renderAbout(); showModal('modal-about'); });
+
+    document.getElementById('move-cancel')?.addEventListener('click', ()=>{ hideModal('modal-move'); _moveState = null; });
+    document.getElementById('modal-move')?.addEventListener('click', (e)=>{ if(e.target.id === 'modal-move'){ hideModal('modal-move'); _moveState = null; } });
+
+    const zipInput = document.getElementById('zip-input');
+    const dropZone = document.getElementById('drop-zone');
+    const selectedFileLabel = document.getElementById('selected-file');
+    const btnConfirmInstall = document.getElementById('btn-confirm-install');
+    const btnCancelInstall = document.getElementById('btn-cancel-install');
+    const wizEntryBtn = document.getElementById('wiz-entry-btn');
+    let selectedFile = null;
+    let inspected = null;
+
+    window.openInstallModal = function(){
+      selectedFile = null; inspected = null;
+      if(zipInput) zipInput.value = '';
+      if(selectedFileLabel) selectedFileLabel.textContent = 'Ningún archivo seleccionado';
+      if(btnConfirmInstall) btnConfirmInstall.disabled = true;
+      const wiz = document.getElementById('install-wizard'); if(wiz) wiz.style.display='none';
+      showModal('modal-install');
+    };
+
+    dropZone?.addEventListener('click', ()=> zipInput?.click());
+    zipInput?.addEventListener('change', async (e)=>{
+      const file = e.target.files?.[0]; if(!file) return;
+      selectedFile = file;
+      if(selectedFileLabel) selectedFileLabel.textContent = file.name + ' (' + (file.size/1024).toFixed(1) + ' KB)';
+      if(btnConfirmInstall){ btnConfirmInstall.disabled = true; btnConfirmInstall.textContent = 'Analizando...'; }
+      try {
+        inspected = await inspectAppPackage(file);
+        const wiz = document.getElementById('install-wizard');
+        const wizName = document.getElementById('wiz-name');
+        const wizFiles = document.getElementById('wiz-files');
+        if(wiz) wiz.style.display='block';
+        if(wizName) wizName.value = inspected.suggested.name || '';
+        if(wizEntryBtn){ wizEntryBtn.querySelector('span').textContent = inspected.suggested.entryPoint || 'index.html'; wizEntryBtn.onclick = ()=>{ const htmls = inspected.htmlFiles?.length ? inspected.htmlFiles : [inspected.suggested.entryPoint]; openOptionsSheet({ title:'HTML de entrada', options: htmls.map(p=>({ value:p, label:p })), selected: inspected.suggested.entryPoint, onPick: (v)=>{ inspected.suggested.entryPoint = v; wizEntryBtn.querySelector('span').textContent = v; } }); }; }
+        if(wizFiles){ const l = inspected.files.slice(0,40).map(f=>f.path).join('\n'); const more = inspected.files.length > 40 ? '\n…' : ''; wizFiles.textContent = l + more; }
+        if(btnConfirmInstall){ btnConfirmInstall.disabled = false; btnConfirmInstall.textContent = 'Instalar'; }
+      } catch(err){ toast(err.message||'ZIP inválido'); inspected = null; if(btnConfirmInstall){ btnConfirmInstall.disabled = true; btnConfirmInstall.textContent = 'Instalar'; } }
+    });
+    dropZone?.addEventListener('dragover', (e)=>{ e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone?.addEventListener('dragleave', ()=> dropZone.classList.remove('dragover'));
+    dropZone?.addEventListener('drop', (e)=>{ e.preventDefault(); dropZone.classList.remove('dragover'); const file = e.dataTransfer?.files?.[0]; if(file && file.name.toLowerCase().endsWith('.zip')){ selectedFile = file; if(selectedFileLabel) selectedFileLabel.textContent = file.name; if(btnConfirmInstall) btnConfirmInstall.disabled = false; } else toast('Solo se aceptan archivos .zip'); });
+    btnCancelInstall?.addEventListener('click', ()=> hideModal('modal-install'));
+    btnConfirmInstall?.addEventListener('click', async ()=>{
+      if(!selectedFile || !inspected) return;
+      btnConfirmInstall.disabled = true; btnConfirmInstall.textContent = 'Instalando...';
+      try {
+        const name = document.getElementById('wiz-name')?.value?.trim();
+        const entryPoint = inspected?.suggested?.entryPoint;
+        await installFromInspected(inspected, { name, entryPoint, displayName:name });
+        hideModal('modal-install'); inspected = null;
+        const wiz = document.getElementById('install-wizard'); if(wiz) wiz.style.display='none';
+        await renderLauncher();
+      } catch(err){ toast(err.message||'Error al instalar'); console.error(err); }
+      finally { btnConfirmInstall.disabled = false; btnConfirmInstall.textContent = 'Instalar'; }
+    });
+
+    document.getElementById('btn-close-app')?.addEventListener('click', ()=> closeAppWithAnimation());
+    document.getElementById('btn-immersive')?.addEventListener('click', ()=>{ haptic(8); if(isSystemFullscreen()) return; toggleImmersive(); });
+    document.getElementById('btn-system-fs')?.addEventListener('click', async ()=>{ haptic(8); if(isSystemFullscreen()) await exitSystemFullscreen(); else await enterSystemFullscreen(); });
+    document.getElementById('immersive-handle')?.addEventListener('click', ()=> revealChrome());
+    document.getElementById('btn-app-menu')?.addEventListener('click', async ()=>{
+      const id = getCurrentAppId(); if(!id) return;
+      await closeCurrentApp();
+      const app = await getApp(id); if(!app) return;
+      document.getElementById('detail-app-name').textContent = app.displayName || app.name;
+      await renderAppPermissions(id);
+      showModal('modal-app-detail');
+      bindDetailActions(id, app);
+    });
+
+    async function openFilesModal(){ const root = document.getElementById('file-manager-root'); await renderFileManager(root, { scope:'shared', appId:null }); showModal('modal-files'); }
+    document.getElementById('btn-close-files')?.addEventListener('click', ()=> hideModal('modal-files'));
+
+    document.getElementById('btn-close-settings')?.addEventListener('click', ()=> hideModal('modal-settings'));
+    document.getElementById('btn-edit-theme')?.addEventListener('click', ()=>{ openThemeEditor(); });
+    document.getElementById('te-close')?.addEventListener('click', ()=>{ /* handled in bindOnce */ });
+
+    document.getElementById('btn-close-manager')?.addEventListener('click', ()=> hideModal('modal-manager'));
+    document.getElementById('btn-close-storage')?.addEventListener('click', ()=> hideModal('modal-storage'));
+    document.getElementById('btn-purge-all-data')?.addEventListener('click', async (e)=>{
+      if(e && e.isTrusted === false) return;
+      const ok = await showConfirm({ title:'Liberar datos', message:'Se eliminarán IndexedDB, cachés y localStorage de todas las mini-apps, sin desinstalarlas.', confirmText:'Liberar' });
+      if(!ok) return;
+      const removed = await purgeAllMiniAppData();
+      haptic([15,30,15]);
+      toast(`Datos liberados: ${removed} elementos`);
+      await renderStorageModal();
+      events.emit(EVENTS.STORAGE_UPDATED);
+    });
+    document.getElementById('btn-close-privacy')?.addEventListener('click', ()=> hideModal('modal-privacy'));
+    document.getElementById('btn-close-privacy-detail')?.addEventListener('click', async ()=>{ hideModal('modal-privacy-detail'); await renderPrivacy(); showModal('modal-privacy'); });
+    document.getElementById('btn-close-about')?.addEventListener('click', ()=> hideModal('modal-about'));
+
+    openAppDetail = async (appId)=>{
+      const app = await getApp(appId); if(!app) return;
+      document.getElementById('detail-app-name').textContent = app.displayName || app.name;
+      await renderAppPermissions(appId);
+      showModal('modal-app-detail');
+      bindDetailActions(appId, app);
+    };
+    function bindDetailActions(appId, app){
+      const bindClick = (id, fn)=>{ const el = document.getElementById(id); if(!el) return; const neu = el.cloneNode(true); el.parentNode.replaceChild(neu, el); neu.addEventListener('click', fn); };
+      bindClick('btn-open-from-detail', ()=>{ hideModal('modal-app-detail'); launchAppWithAnimation(appId, null); });
+      bindClick('btn-uninstall', async (e)=>{ if(e && e.isTrusted === false) return; const ok = await showConfirm({ title:'Desinstalar', message:`Se borrarán archivos, IndexedDB, cachés y localStorage de "${app.displayName||app.name}".`, confirmText:'Desinstalar' }); if(ok){ await uninstallApp(appId); hideModal('modal-app-detail'); await renderLauncher(); } });
+      bindClick('btn-purge-app-data', async ()=>{ const ok = await showConfirm({ title:'Limpiar datos', message:'Se borrarán IndexedDB, cachés y localStorage de esta app sin desinstalarla.', confirmText:'Limpiar' }); if(!ok) return; const removed = await wipeAppOriginData(appId); haptic([15,30,15]); toast(`Limpiado: ${removed} elementos`); await renderAppPermissions(appId); bindDetailActions(appId, app); });
+      bindClick('btn-close-detail', ()=> hideModal('modal-app-detail'));
+      bindClick('btn-rename-app', async ()=>{
+        const meta = await getApp(appId);
+        const current = meta?.displayName || meta?.name || '';
+        const next = await showPrompt({ title:'Renombrar', message:'Nuevo nombre de la app:', input:{ value: current }, confirmText:'Guardar' });
+        if(next === null) return;
+        const trimmed = (next||'').trim();
+        if(!trimmed){ toast('El nombre no puede estar vacío'); return; }
+        try { meta.displayName = trimmed; meta.shortName = trimmed; meta.updatedAt = Date.now(); await putApp(meta); document.getElementById('detail-app-name').textContent = trimmed; toast('Nombre actualizado'); await renderLauncher(); } catch(err){ toast(err.message||'Error al renombrar'); }
+      });
+      bindClick('btn-change-icon', ()=> document.getElementById('icon-file-input')?.click());
+      const iconInput = document.getElementById('icon-file-input');
+      if(iconInput){ iconInput.onchange = async (e)=>{
+        const file = e.target.files?.[0];
+        if(!file || !file.type.startsWith('image/')){ toast('Selecciona una imagen válida'); return; }
+        try { const customPath = '__custom_icon__'; await putFile(appId, customPath, file, file.type); const meta = await getApp(appId); if(meta){ meta.customIconPath = customPath; meta.updatedAt = Date.now(); await putApp(meta); } toast('Icono actualizado'); await renderAppPermissions(appId); await renderLauncher(); } catch(err){ toast(err.message||'Error al cambiar icono'); }
+        iconInput.value = '';
+      }; }
+    }
+
+    document.getElementById('launcher')?.addEventListener('click', (e)=>{
+      if(!editMode) return;
+      if(e.target.closest?.('.app-icon')) return;
+      if(selectedItems.size === 0) return;
+      selectedItems.clear();
+      document.querySelectorAll('.app-icon.selected').forEach(el => el.classList.remove('selected'));
+      renderEditBar();
+    });
+
+    document.querySelectorAll('.modal-overlay').forEach(overlay=>{
+      overlay.addEventListener('click', (e)=>{ if(e.target === overlay && overlay.id !== 'modal-move') overlay.classList.remove('active'); });
+    });
+
+    document.addEventListener('keydown', async (e)=>{
+      if(e.key === 'Escape'){
+        if(document.getElementById('dialog-overlay')?.classList.contains('active')){ _closeDialog(null); return; }
+        if(document.getElementById('modal-move')?.classList.contains('active')){ hideModal('modal-move'); _moveState = null; return; }
+        if(document.getElementById('panel').classList.contains('active')){ closePanel(); return; }
+        if(isAppRunning()){ if(isSystemFullscreen()) await exitSystemFullscreen(); else closeAppWithAnimation(); return; }
+        if(editMode){ setEditMode(false); return; }
+        if(currentFolderId){ navigateHome(); return; }
+        hideAllModals();
+      }
+    });
+  }
+
+  async function renderAbout(){
+    const swEl = document.getElementById('about-sw');
+    if(swEl) swEl.textContent = navigator.serviceWorker?.controller ? 'Activo' : 'Inactivo';
+    const modeEl = document.getElementById('about-mode');
+    if(modeEl){ const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone; modeEl.textContent = standalone ? 'PWA Standalone' : 'Navegador'; }
+  }
+
+  /* ───── 19. Bootstrap ───── */
+  async function registerSW(){
+    if(!('serviceWorker' in navigator)) return;
+    try {
+      const reg = await navigator.serviceWorker.register('/sw.js', { scope:'/' });
+      if(reg.installing){ await new Promise(resolve=>{ reg.installing.addEventListener('statechange', e=>{ if(e.target.state==='activated') resolve(); }); }); }
+      else if(reg.waiting){ reg.waiting.postMessage({ type:'SKIP_WAITING' }); }
+      if(reg.active) reg.active.postMessage({ type:'CLIENTS_CLAIM' });
+      const start = Date.now();
+      while(!navigator.serviceWorker.controller && Date.now()-start < 3000){ await new Promise(r=>setTimeout(r,100)); }
+      reg.addEventListener('updatefound', ()=>{
+        const nw = reg.installing; if(!nw) return;
+        nw.addEventListener('statechange', ()=>{
+          if(nw.state === 'installed' && navigator.serviceWorker.controller){
+            toastAction('Nueva versión disponible', 'Recargar', ()=>{ nw.postMessage({ type:'SKIP_WAITING' }); setTimeout(()=> location.reload(), 300); }, 8000);
+          }
+        });
+      });
+    } catch(err){ console.error('[ZBITDROID] SW:', err); }
+  }
+  async function initSystemPermissions(){ if(navigator.storage?.persist){ try { await navigator.storage.persist(); } catch(e){} } }
+
+  async function init(){
+    console.log('%c ZBITDROID v5.6 ', 'background:#e63946;color:#fff;font-weight:bold;padding:4px 8px;border-radius:4px');
+    applyPrefs(getPrefs());
+    await openDB();
+    await registerSW();
+    await initSystemPermissions();
+    attachGlobalBridgeHandler();
+    try { await renderLauncher(); } catch(e){ console.warn(e); }
+    events.on(EVENTS.APPS_CHANGED, ()=> renderLauncher());
+    events.on(EVENTS.APPS_CHANGED, ()=>{ const m = document.getElementById('modal-manager'); if(m?.classList.contains('active')) renderAppManager(); });
+    events.on(EVENTS.STORAGE_UPDATED, ()=>{ const s = document.getElementById('modal-storage'); if(s?.classList.contains('active')) renderStorageModal(); });
+    setupUI();
+  }
+  init().catch(err=>{
+    console.error('Error fatal al iniciar ZBITDROID:', err);
+    document.body.innerHTML = `<div style="padding:40px;color:#fff;font-family:sans-serif;"><h1>Error al iniciar ZBITDROID</h1><pre>${err.message}</pre></div>`;
+  });
+  </script>
+</body>
+</html>
